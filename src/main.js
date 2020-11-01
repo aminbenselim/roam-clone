@@ -93,11 +93,31 @@ export const Main = ({ active }) => {
                 type: "SET_BLOCK_ACTIVE",
                 index: activeBlockIndex - 1,
               });
-              // previousBlock.classList.add("active");
-              // previousBlock.focus();
-              // previousBlock.setSelectionRange(-1, -1);
             }
           }
+        }
+        // keyboard navigation
+        if (e.keyCode == 38) {
+          e.preventDefault();
+          dispatch({
+            type: "SET_BLOCK_INACTIVE",
+            index: activeBlockIndex,
+          });
+          dispatch({
+            type: "SET_BLOCK_ACTIVE",
+            index: activeBlockIndex - 1,
+          });
+        }
+        if (e.keyCode == 40) {
+          e.preventDefault();
+          dispatch({
+            type: "SET_BLOCK_INACTIVE",
+            index: activeBlockIndex,
+          });
+          dispatch({
+            type: "SET_BLOCK_ACTIVE",
+            index: (activeBlockIndex + 1) % tree.length,
+          });
         }
       }}
       id="main-ul"
