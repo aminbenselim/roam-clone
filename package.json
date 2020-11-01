@@ -4,6 +4,7 @@
   "description": "A simple react-router example",
   "main": "index.js",
   "dependencies": {
+    "nanoid": "^3.1.16",
     "react": "latest",
     "react-dom": "latest",
     "react-mentions": "4.0.2",
@@ -22,5 +23,11 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
-  }
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }

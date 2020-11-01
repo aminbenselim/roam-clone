@@ -1,19 +1,39 @@
 import React from "react";
 import { MentionsInput, Mention } from "react-mentions";
 
-export const Block = ({ active, value, handleChange }) => {
+export const Block = ({ block, handleChange}) => {
+
+  const inputRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if(block.isActive) {
+      inputRef && inputRef.current.focus();
+    }
+  }, [inputRef, block.isActive])
+
   return (
-    <textarea value={value} onChange={handleChange}></textarea>
-    // <MentionsInput
-    //   // markup="@[__display__](__id__)"
-    //   //  inputRef={(input) => input && input.focus()}
-    //   className={`block ${active ? "active" : ""}`}
-    // >
-    //   <Mention
-    //     trigger="#"
-    //     // data={{}}
-    //     // renderSuggestion={}
-    //   />
-    // </MentionsInput>
+    <MentionsInput
+      value={block.value}
+      onChange={handleChange}
+      inputRef={inputRef}
+      className={`block ${block.active ? "active" : ""}`}
+    >
+      <Mention
+        markup="{{[__display__](__id__)}}"
+        trigger="{{"
+        data={["page 1", "page 2"]}
+        renderSuggestion={(
+          suggestion,
+          search,
+          highlightedDisplay,
+          index,
+          focused
+        ) => (
+          <div className={`user ${focused ? 'focused' : ''}`}>
+            {highlightedDisplay}
+          </div>
+        )}
+    />
+    </MentionsInput>
   );
 };
