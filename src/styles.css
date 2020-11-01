@@ -1,0 +1,21 @@
+textarea {
+  margin: 0px;
+  padding: 0px;
+}
+
+.block {
+  line-height: 1.5em;
+  width: 100%;
+  outline: 1px solid red;
+  overflow-wrap: break-spaces;
+  vertical-align: top;
+  margin-top: -20px;
+  background-color: transparent;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 4px;
+  letter-spacing: inherit;
+  border: none;
+  overflow: hidden;
+  resize: none;
+}
