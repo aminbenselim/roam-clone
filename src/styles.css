@@ -1,3 +1,8 @@
+.page {
+  min-height: 100vh;
+  margin-bottom: 20px;
+}
+
 .block {
   width: 100%;
   line-height: 1.5em;
