@@ -1,7 +1,7 @@
 import React from "react";
 import { MentionsInput, Mention } from "react-mentions";
 
-export const Block = ({ block, handleChange }) => {
+export const Block = ({ block, handleChange, setBlockActive }) => {
   const inputRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -31,7 +31,7 @@ export const Block = ({ block, handleChange }) => {
           },
           {
             id: "page-3",
-            display: 'projects',
+            display: "projects",
           },
         ]}
         displayTransform={(id, display) => `[[${display}]]`}
@@ -49,13 +49,16 @@ export const Block = ({ block, handleChange }) => {
             id: "id-2",
             display: "Roam research is amazing",
           },
-
         ]}
         displayTransform={(id, display) => `((${id}))`}
         appendSpaceOnAdd
       />
     </MentionsInput>
   ) : (
-    <div dangerouslySetInnerHTML={{ __html: block.value }}></div>
+    <div
+      className="block"
+      dangerouslySetInnerHTML={{ __html: block.value ? block.value : "​" }}
+      onClick={setBlockActive}
+    ></div>
   );
 };

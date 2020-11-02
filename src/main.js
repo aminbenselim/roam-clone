@@ -62,6 +62,18 @@ export const Main = ({ active }) => {
     });
   };
 
+  const setBlockActive = (index) => {
+    const activeBlockIndex = tree.findIndex((block) => block.isActive);
+    dispatch({
+      type: "SET_BLOCK_INACTIVE",
+      index: activeBlockIndex,
+    });
+    dispatch({
+      type: "SET_BLOCK_ACTIVE",
+      index,
+    });
+  };
+
   return (
     <ul
       onKeyDown={(e) => {
@@ -132,7 +144,11 @@ export const Main = ({ active }) => {
     >
       {tree.map((block, index) => (
         <li key={block.uid}>
-          <Block block={block} handleChange={handleChange(index)} />
+          <Block
+            block={block}
+            handleChange={handleChange(index)}
+            setBlockActive={() => setBlockActive(index)}
+          />
         </li>
       ))}
     </ul>

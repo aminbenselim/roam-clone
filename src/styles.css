@@ -1,5 +1,12 @@
 .block {
+  width: 100%;
   line-height: 1.5em;
+  min-height: 1.5em;
+  cursor: text;
+}
+
+.block:hover {
+  background-color: whitesmoke;
 }
 
 .highlighted {
