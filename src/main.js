@@ -12,7 +12,9 @@ const DEFAULT_BLOCK = () => ({
 function treeReducer(state, action) {
   switch (action.type) {
     case "ADD_NEW_BLOCK": {
-      return state.concat(DEFAULT_BLOCK());
+      let newTree = state.slice();
+      newTree.splice(action.index, 0, DEFAULT_BLOCK());
+      return newTree;
     }
     case "SET_BLOCK_VALUE": {
       let newTree = state.slice();
@@ -76,9 +78,10 @@ export const Main = ({ active }) => {
             type: "SET_BLOCK_INACTIVE",
             index: activeBlockIndex,
           });
-          // and add new block
+          // and add new block after the cuurent active block
           dispatch({
             type: "ADD_NEW_BLOCK",
+            index: activeBlockIndex + 1,
           });
         }
         // Delete keycode
