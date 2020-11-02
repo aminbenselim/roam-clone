@@ -34,7 +34,6 @@ function treeReducer(state, action) {
     }
     case "SET_BLOCK_INACTIVE": {
       let newTree = state.slice();
-      console.log(newTree[action.index]);
       newTree.splice(action.index, 1, {
         ...newTree[action.index],
         isActive: false,
@@ -69,6 +68,7 @@ export const Main = ({ active }) => {
         const code = e.keyCode ? e.keyCode : e.which;
 
         const activeBlockIndex = tree.findIndex((block) => block.isActive);
+        const blocksCount = tree.length;
 
         //Enter keycode
         if (code === 13 && !e.shiftKey) {
@@ -102,21 +102,20 @@ export const Main = ({ active }) => {
         }
         // keyboard navigation
         if (e.keyCode == 38) {
-          if (tree.length > 1) {
+          if (blocksCount > 1) {
             e.preventDefault();
-            console.log({ activeBlockIndex });
             dispatch({
               type: "SET_BLOCK_INACTIVE",
               index: activeBlockIndex,
             });
             dispatch({
               type: "SET_BLOCK_ACTIVE",
-              index: activeBlockIndex - 1,
+              index: (blocksCount + activeBlockIndex - 1) % blocksCount,
             });
           }
         }
         if (e.keyCode == 40) {
-          if (tree.length > 1) {
+          if (blocksCount > 1) {
             e.preventDefault();
             dispatch({
               type: "SET_BLOCK_INACTIVE",
@@ -124,7 +123,7 @@ export const Main = ({ active }) => {
             });
             dispatch({
               type: "SET_BLOCK_ACTIVE",
-              index: (activeBlockIndex + 1) % tree.length,
+              index: (activeBlockIndex + 1) % blocksCount,
             });
           }
         }
