@@ -7,7 +7,7 @@ import { Page } from "./Page.js";
 
 const DEFAULT_PAGE = () => ({
   id: nanoid(),
-  title: format(new Date(), "iiii do yyyy"),
+  title: format(new Date(), "MMMM do, yyyy"),
 });
 
 export const Home = () => {
@@ -20,7 +20,7 @@ export const Home = () => {
       setPages((pages) =>
         pages.concat({
           id: nanoid(),
-          title: format(subDays(new Date(), pagesCount), "iiii do yyyy"),
+          title: format(subDays(new Date(), pagesCount), "MMMM do, yyyy"),
         })
       );
       setPagesCount((pagesCount) => pagesCount + 1);
