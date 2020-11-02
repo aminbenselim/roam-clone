@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { Block } from "./block.js";
 
 const DEFAULT_BLOCK = () => ({
-  uid: nanoid(),
+  uid: nanoid(10),
   isActive: true,
   value: "",
 });
@@ -32,6 +32,7 @@ function treeReducer(state, action) {
     }
     case "SET_BLOCK_INACTIVE": {
       let newTree = state.slice();
+      console.log(newTree[action.index]);
       newTree.splice(action.index, 1, {
         ...newTree[action.index],
         isActive: false,
@@ -98,26 +99,31 @@ export const Main = ({ active }) => {
         }
         // keyboard navigation
         if (e.keyCode == 38) {
-          e.preventDefault();
-          dispatch({
-            type: "SET_BLOCK_INACTIVE",
-            index: activeBlockIndex,
-          });
-          dispatch({
-            type: "SET_BLOCK_ACTIVE",
-            index: activeBlockIndex - 1,
-          });
+          if (tree.length > 1) {
+            e.preventDefault();
+            console.log({ activeBlockIndex });
+            dispatch({
+              type: "SET_BLOCK_INACTIVE",
+              index: activeBlockIndex,
+            });
+            dispatch({
+              type: "SET_BLOCK_ACTIVE",
+              index: activeBlockIndex - 1,
+            });
+          }
         }
         if (e.keyCode == 40) {
-          e.preventDefault();
-          dispatch({
-            type: "SET_BLOCK_INACTIVE",
-            index: activeBlockIndex,
-          });
-          dispatch({
-            type: "SET_BLOCK_ACTIVE",
-            index: (activeBlockIndex + 1) % tree.length,
-          });
+          if (tree.length > 1) {
+            e.preventDefault();
+            dispatch({
+              type: "SET_BLOCK_INACTIVE",
+              index: activeBlockIndex,
+            });
+            dispatch({
+              type: "SET_BLOCK_ACTIVE",
+              index: (activeBlockIndex + 1) % tree.length,
+            });
+          }
         }
       }}
       id="main-ul"
