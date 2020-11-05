@@ -8,6 +8,8 @@
   line-height: 1.5em;
   min-height: 1.5em;
   cursor: text;
+  display: flex;
+  flex-direction: row;
 }
 
 .block:hover {
@@ -29,4 +31,10 @@
 
 .header ul {
   list-style: none;
+}
+
+.bullet {
+  text-decoration: none;
+  margin-right: 8px;
+  align-self: center;
 }

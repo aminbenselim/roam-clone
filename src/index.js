@@ -5,7 +5,7 @@ import "./styles.css";
 
 import { Home } from "./Home";
 import { Page } from "./Page";
-import ScrollToTop from './ScrollToTop';
+import ScrollToTop from './utils/ScrollToTop';
 
 const App = () => {
   return (
@@ -22,7 +22,7 @@ const App = () => {
         </div>
 
         <Switch>
-          <Route path="/p/:id" children={<Page />} />
+        <Route path="/b/:id" children={<Page />} />
           <Route exact path="/">
             <Home />
           </Route>
