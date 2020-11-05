@@ -1,5 +1,5 @@
 import React from "react";
-import { format, formatDistance, formatRelative, subDays } from "date-fns";
+import { format, subDays } from "date-fns";
 import { useInView } from "react-intersection-observer";
 import { nanoid } from "nanoid";
 
@@ -31,7 +31,7 @@ export const Home = () => {
     <div>
       <h1>Daily Notes</h1>
       {pages.map((page) => (
-        <Page key={page.id} title={page.title} />
+        <Page key={page.id} title={page.title} id={page.id}/>
       ))}
       {/* used for infinite loading of days */}
       <div ref={ref}></div>

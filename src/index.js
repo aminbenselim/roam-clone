@@ -5,10 +5,12 @@ import "./styles.css";
 
 import { Home } from "./Home";
 import { Page } from "./Page";
+import ScrollToTop from './ScrollToTop';
 
 const App = () => {
   return (
     <Router>
+      <ScrollToTop />
       <>
         <div className="header">
           <ul>
@@ -20,11 +22,9 @@ const App = () => {
         </div>
 
         <Switch>
+          <Route path="/p/:id" children={<Page />} />
           <Route exact path="/">
             <Home />
-          </Route>
-          <Route exact path="p/[:page]">
-            <Page />
           </Route>
         </Switch>
       </>

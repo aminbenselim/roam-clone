@@ -1,4 +1,5 @@
 import React from "react";
+import { Link, useParams } from "react-router-dom";
 import { nanoid } from "nanoid";
 
 import { Block } from "./Block.js";
@@ -51,9 +52,14 @@ function treeReducer(state, action) {
   }
 }
 
-export const Page = ({ title }) => {
+export const Page = ({ id, title }) => {
   const [tree, dispatch] = React.useReducer(treeReducer, [DEFAULT_BLOCK()]);
 
+  const { id: paramId } = useParams();
+
+  console.log({id, paramId})
+
+  const path = `/p/${id || paramId}`;
   const handleChange = (index) => (event) => {
     dispatch({
       type: "SET_BLOCK_VALUE",
@@ -76,7 +82,9 @@ export const Page = ({ title }) => {
 
   return (
     <div className="page">
-      <h2>{title}</h2>
+      <h2>
+        <Link to={path}>{title}</Link>
+      </h2>
       <ul
         onKeyDown={(e) => {
           const code = e.keyCode ? e.keyCode : e.which;
@@ -115,7 +123,7 @@ export const Page = ({ title }) => {
             }
           }
           // keyboard navigation
-          if (e.keyCode == 38) {
+          if (e.keyCode === 38) {
             if (blocksCount > 1) {
               e.preventDefault();
               dispatch({
@@ -128,7 +136,7 @@ export const Page = ({ title }) => {
               });
             }
           }
-          if (e.keyCode == 40) {
+          if (e.keyCode === 40) {
             if (blocksCount > 1) {
               e.preventDefault();
               dispatch({
