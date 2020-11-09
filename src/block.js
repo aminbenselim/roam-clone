@@ -3,14 +3,8 @@ import { MentionsInput, Mention } from "react-mentions";
 import { Link, useParams } from "react-router-dom";
 import { nanoid } from "nanoid";
 
-const DEFAULT_BLOCK = () => ({
-  uid: nanoid(10),
-  isActive: true,
-  value: "",
-});
-
 export const Block = ({
-  block = DEFAULT_BLOCK(),
+  block,
   handleChange,
   setBlockActive,
 }) => {
@@ -24,12 +18,12 @@ export const Block = ({
 
   const { id: paramId } = useParams();
 
-  const path = `/p/${block.uid || paramId}`;
+  const path = `/d/${block.nodeId || paramId}`;
 
   return (
-    <div className={`block level-${block.level}`} style={{
-      marginLeft: `${block.level * 8}px`,
-      fontSize: `${16 - block.level * 0.2} px`
+    <div className="block" style={{
+      marginLeft: `${block.depth * 8}px`,
+      fontSize: `${16 - block.depth * 0.2} px`
     }}>
       {block.isActive ? (
         <MentionsInput
