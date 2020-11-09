@@ -5,11 +5,16 @@
   "main": "index.js",
   "dependencies": {
     "date-fns": "^2.16.1",
+    "dgraph-js-http": "^20.7.2",
+    "graphql": "^14.2.1",
+    "graphql-tag": "^2.10.0",
+    "lodash": "^4.17.20",
     "nanoid": "^3.1.16",
     "react": "latest",
     "react-dom": "latest",
     "react-intersection-observer": "^8.30.0",
     "react-mentions": "4.0.2",
+    "react-query": "^2.26.2",
     "react-router-dom": "latest",
     "react-scripts": "2.0.0"
   },
