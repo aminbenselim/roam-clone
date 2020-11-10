@@ -1,7 +1,6 @@
 import React from "react";
 import { MentionsInput, Mention } from "react-mentions";
 import { Link, useParams } from "react-router-dom";
-import { nanoid } from "nanoid";
 
 export const Block = ({
   block,

@@ -2,9 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import {
-  useQuery,
-  useMutation,
-  useQueryCache,
   QueryCache,
   ReactQueryCacheProvider,
 } from "react-query";
@@ -12,9 +9,9 @@ import {
 import "./styles.css";
 import { DailyNotes } from "./DailyNotes";
 import { Page } from "./Page";
-import { DQL_ENDPOINT} from './dgraph'
 import ScrollToTop from "./utils/ScrollToTop";
 
+const DQL_ENDPOINT = "https://graph.eu-central-1.aws.cloud.dgraph.io";
 const queryCache = new QueryCache();
 
 const dgraph = require("dgraph-js-http");

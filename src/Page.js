@@ -1,15 +1,19 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
-import { nanoid } from "nanoid";
+import debounce from "lodash/debounce";
 import { useQuery } from "react-query";
-import omit from "lodash/omit";
-import { queryChildrenByNode } from "./dgraph";
-import { dgraphClient } from "./index";
 
+import {
+  getChildren,
+  createEmptyNode,
+  deleteNode,
+  setNodeValue,
+} from "./dgraph";
+import { DFS } from "./utils/DFS";
 import { Block } from "./Block.js";
 
-const DEFAULT_BLOCK = (depth, position) => ({
-  nodeId: nanoid(10),
+const generateBlock = (nodeId, depth, position) => ({
+  nodeId,
   isActive: true,
   value: "",
   children: null,
@@ -18,92 +22,10 @@ const DEFAULT_BLOCK = (depth, position) => ({
   references: [],
 });
 
-const DFS = (node) => {
-  const result = [];
-  const recurse = (node, depth = -1) => {
-    const visited = [];
-
-    if (!node.title) {
-      result.push({
-        ...omit(node, ["children"]),
-        depth,
-        isActive: false,
-      });
-    }
-
-    if (node.children) {
-      node.children.forEach((child) => recurse(child, depth + 1));
-    }
-  };
-
-  recurse(node);
-  return result;
-};
-
-const createNewNode = async (node, parentId) => {
-  let nodeId;
-  let nextPosition;
-  let newPosition = Date.now() * 100;
-  // create new transaction
-  const txn = dgraphClient.newTxn();
-
-  try {
-    // query to find if page with this title is available
-    const query = `query {
-      find(func: eq(Node.position, "${node.position}")) @normalize {
-        nodeId: uid
-        Node.parent {
-          ~Node.parent @filter(gt(Node.position, "${node.position}")) (orderasc: Node.position, first: 1) {
-            nextPosition: Node.position
-          }
-        }
-      }
-    }`;
-    const res = await txn.query(query);
-
-    if (res.data.find.length === 1) {
-      nodeId = res.data.find[0].nodeId;
-      nextPosition = res.data.find[0].nextPosition;
-    } else {
-      // if this is the default active node
-      // create a new node with value
-      const mu = await txn.mutate({
-        setNquads: `_:node <Node.position> "${node.position}"^^<xs:int>	 .
-        _:node <dgraph.type> "Node" .`,
-      });
-      nodeId = mu.data.uids.node;
-    }
-
-    // calculate new position
-    if (nextPosition) {
-      newPosition = (node.position + nextPosition) / 2;
-    }
-
-    await txn.mutate({
-      setNquads: `<${nodeId}> <Node.value>  "${node.value}" .
-        <${nodeId}> <Node.parent> <${parentId}> .`,
-    });
-
-    await txn.commit();
-  } finally {
-    await txn.discard();
-  }
-
-  return { nodeId, newPosition };
-};
-
-const deleteNode = async (node) => {
-  // create new transaction
-  const txn = dgraphClient.newTxn();
-
-  try {
-    await txn.mutate({ deleteNquads: `<${node.nodeId}> * * .`, commitNow: true });
-  } catch (error) {
-    console.log({error})
-  } finally {
-    await txn.discard();
-  }
-}
+const debouncedSet = debounce(
+  (nodeId, value, references) => setNodeValue(nodeId, value, references),
+  300
+);
 
 function treeReducer(state, action) {
   switch (action.type) {
@@ -112,7 +34,11 @@ function treeReducer(state, action) {
     }
     case "ADD_NEW_BLOCK": {
       let newTree = state.slice();
-      newTree.splice(action.index, 0, DEFAULT_BLOCK(action.depth, action.position));
+      newTree.splice(
+        action.index,
+        0,
+        generateBlock(action.nodeId, action.depth, action.position)
+      );
       return newTree;
     }
     case "SET_BLOCK_VALUE": {
@@ -120,14 +46,6 @@ function treeReducer(state, action) {
       newTree.splice(action.index, 1, {
         ...newTree[action.index],
         value: action.value,
-      });
-      return newTree;
-    }
-    case "SET_BLOCK_ID": {
-      let newTree = state.slice();
-      newTree.splice(action.index, 1, {
-        ...newTree[action.index],
-        nodeId: action.nodeId,
       });
       return newTree;
     }
@@ -159,47 +77,49 @@ function treeReducer(state, action) {
 }
 
 export const Page = ({ id, title }) => {
+  const [tree, dispatch] = React.useReducer(treeReducer, null);
+
   const { nodeId } = useParams();
   const pageId = id || nodeId;
-  const { status, data, error, isFetching } = useQuery(
+  const { data } = useQuery(
     ["fetchNodes", pageId],
     async () => {
-      const res = await dgraphClient
-        .newTxn({ readOnly: true })
-        .queryWithVars(queryChildrenByNode, {
-          $nodeId: pageId,
-        });
-
-      return DFS(res.data.queryChildrenByNode[0]);
+      const childrenNodes = await getChildren(pageId);
+      return DFS(childrenNodes);
     },
     {
       staleTime: Infinity,
     }
   );
 
-  const [tree, dispatch] = React.useReducer(treeReducer, null);
-
   React.useEffect(() => {
     if (data) {
       dispatch({
         type: "SET_TREE",
-        tree: data.concat([DEFAULT_BLOCK()]),
+        tree: data,
+      });
+      dispatch({
+        type: "SET_BLOCK_ACTIVE",
+        index: data.length - 1,
+        value: true,
       });
     }
   }, [data]);
 
   const path = `/b/${pageId}`;
   const handleChange = (index) => (event) => {
+    const value = event.target.value;
     dispatch({
       type: "SET_BLOCK_VALUE",
       index,
-      value: event.target.value,
+      value,
     });
+    // update node value after 0.3s of inactivity
+    debouncedSet(tree[index].nodeId, value);
   };
 
   const setBlockActive = (index) => () => {
     const activeBlockIndex = tree.findIndex((block) => block.isActive);
-    console.log({ activeBlockIndex });
     dispatch({
       type: "SET_BLOCK_ACTIVE",
       index: activeBlockIndex,
@@ -223,22 +143,23 @@ export const Page = ({ id, title }) => {
             const code = e.keyCode ? e.keyCode : e.which;
 
             const activeBlockIndex = tree.findIndex((block) => block.isActive);
+            const nextBlockIndex = activeBlockIndex + 1;
+            const activeNode = tree[activeBlockIndex];
+            const nextNode = tree[nextBlockIndex];
+
             const blocksCount = tree.length;
 
             //Enter keycode
             if (code === 13 && !e.shiftKey) {
               e.preventDefault();
-
-              console.log(tree[activeBlockIndex])
-              const { nodeId, newPosition } = await createNewNode(
-                tree[activeBlockIndex],
-                pageId
-              );
-              dispatch({
-                type: "SET_BLOCK_ID",
-                index: activeBlockIndex,
-                nodeId,
-              });
+              // create new node and set it as active block
+              let newPosition = Date.now() * 100;
+              // if new node is between two nodes, its position is the average
+              // of the adjacent nodes positions
+              if (nextNode && nextNode.depth === activeNode.depth) {
+                newPosition = (nextNode.position + activeNode.position) / 2;
+              }
+              const nodeId = await createEmptyNode(pageId, newPosition);
               // remove is active from current active block
               dispatch({
                 type: "SET_BLOCK_ACTIVE",
@@ -249,13 +170,14 @@ export const Page = ({ id, title }) => {
               dispatch({
                 type: "ADD_NEW_BLOCK",
                 index: activeBlockIndex + 1,
+                nodeId,
                 position: newPosition,
                 depth: tree[activeBlockIndex].depth,
               });
             }
             // Delete keycode
             if (code === 8) {
-              if (tree[activeBlockIndex].value === "") {
+              if (!activeNode.value) {
                 if (tree.length !== 1) {
                   e.preventDefault();
                   dispatch({
