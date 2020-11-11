@@ -6,6 +6,7 @@
   "dependencies": {
     "date-fns": "^2.16.1",
     "dgraph-js-http": "^20.7.2",
+    "dompurify": "^2.2.2",
     "graphql": "^14.2.1",
     "graphql-tag": "^2.10.0",
     "lodash": "^4.17.20",

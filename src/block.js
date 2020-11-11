@@ -1,12 +1,22 @@
 import React from "react";
 import { MentionsInput, Mention } from "react-mentions";
 import { Link, useParams } from "react-router-dom";
+import DOMPurify from "dompurify";
+import { getNodesByTitle } from "./dgraph";
+import debounce from "lodash/debounce";
 
-export const Block = ({
-  block,
-  handleChange,
-  setBlockActive,
-}) => {
+const debouncedGetPages = debounce(
+  (query, callback) =>
+    getNodesByTitle(query)
+      .then((data) => {
+        console.log({ data });
+        return data;
+      })
+      .then(callback),
+  300
+);
+
+export const Block = ({ block, handleChange, setBlockActive }) => {
   const inputRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -19,11 +29,19 @@ export const Block = ({
 
   const path = `/d/${block.nodeId || paramId}`;
 
+  const fetchpages = (query, callback) => {
+    if (!query) return;
+    debouncedGetPages(query, callback);
+  };
+
   return (
-    <div className="block" style={{
-      marginLeft: `${block.depth * 8}px`,
-      fontSize: `${16 - block.depth * 0.2} px`
-    }}>
+    <div
+      className="block"
+      style={{
+        marginLeft: `${block.depth * 8}px`,
+        fontSize: `${16 - block.depth * 0.2} px`,
+      }}
+    >
       {block.isActive ? (
         <MentionsInput
           value={block.value}
@@ -32,27 +50,14 @@ export const Block = ({
           className={`block ${block.active ? "active" : ""}`}
         >
           <Mention
-            markup="[[<a href='\'>__display__</a>]]"
+            markup="[[<a href='/p/__id__'>__display__</a>]]"
             trigger="[["
-            data={[
-              {
-                id: "page-1",
-                display: "notes",
-              },
-              {
-                id: "page-2",
-                display: "dailies",
-              },
-              {
-                id: "page-3",
-                display: "projects",
-              },
-            ]}
+            data={fetchpages}
             displayTransform={(id, display) => `[[${display}]]`}
             appendSpaceOnAdd
           />
           <Mention
-            markup="<a class='highlighted' href='\'>__display__</a>"
+            markup="<a class='highlighted' href='/p/__id__'>__display__</a>"
             trigger="(("
             data={[
               {
@@ -75,7 +80,7 @@ export const Block = ({
           </Link>
           <div
             dangerouslySetInnerHTML={{
-              __html: block.value ? block.value : "​",
+              __html: block.value ? DOMPurify.sanitize(block.value) : "​",
             }}
             onClick={setBlockActive}
           />

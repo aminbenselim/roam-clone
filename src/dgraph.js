@@ -2,7 +2,7 @@ import { dgraphClient } from "./index";
 
 export const queryChildrenByNode = `
 query queryChildrenByNode($nodeId: string) {
-  queryChildrenByNode(func: uid($nodeId))  @recurse {
+  childNodes(func: uid($nodeId))  @recurse {
     nodeId: uid
     title: Node.title
     value: Node.value
@@ -16,17 +16,56 @@ query queryChildrenByNode($nodeId: string) {
 export const getChildren = async (nodeId) => {
   try {
     const res = await dgraphClient
-      .newTxn({ readOnly: true })
-      .queryWithVars(queryChildrenByNode, {
-        $nodeId: nodeId,
-      });
+    .newTxn({ readOnly: true })
+    .queryWithVars(queryChildrenByNode, {
+      $nodeId: nodeId,
+    });
 
-    return res.data.queryChildrenByNode[0];
+    return res.data.childNodes[0];
   } catch (error) {
     console.log(error);
   }
 };
 
+export const queryNodesByTitle = val => `
+query {
+  nodes(func: regexp(Node.title, /^.*${val}.*$/i), first: 5) {
+    id: uid
+    display: Node.title
+  }
+}`;
+
+export const getNodesByTitle = async (query) => {
+  try {
+    const res = await dgraphClient
+      .newTxn({ readOnly: true })
+      .query(queryNodesByTitle(query));
+
+    return res.data.nodes;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export const queryNodesByValue = val => `
+query {
+  nodes(func: regexp(Node.value, /^.*${val}.*$/i) ) (first: 5) {
+    id: uid
+    display: Node.value
+  }
+}`;
+
+export const getNodesByValue = async (query) => {
+  try {
+    const res = await dgraphClient
+      .newTxn({ readOnly: true })
+      .query(queryNodesByValue(query));
+
+    return res.data.nodes;
+  } catch (error) {
+    console.log(error);
+  }
+}
 export const createEmptyNode = async (
   parentId,
   position = Date.now() * 100

@@ -1,7 +1,6 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
 import debounce from "lodash/debounce";
-import { useQuery } from "react-query";
 
 import {
   getChildren,
@@ -10,101 +9,49 @@ import {
   setNodeValue,
 } from "./dgraph";
 import { DFS } from "./utils/DFS";
+import treeReducer from './reducer'
 import { Block } from "./Block.js";
-
-const generateBlock = (nodeId, depth, position) => ({
-  nodeId,
-  isActive: true,
-  value: "",
-  children: null,
-  depth: depth || 0,
-  position: position || Date.now() * 100,
-  references: [],
-});
 
 const debouncedSet = debounce(
   (nodeId, value, references) => setNodeValue(nodeId, value, references),
   300
 );
 
-function treeReducer(state, action) {
-  switch (action.type) {
-    case "SET_TREE": {
-      return action.tree;
-    }
-    case "ADD_NEW_BLOCK": {
-      let newTree = state.slice();
-      newTree.splice(
-        action.index,
-        0,
-        generateBlock(action.nodeId, action.depth, action.position)
-      );
-      return newTree;
-    }
-    case "SET_BLOCK_VALUE": {
-      let newTree = state.slice();
-      newTree.splice(action.index, 1, {
-        ...newTree[action.index],
-        value: action.value,
-      });
-      return newTree;
-    }
-    case "SET_BLOCK_depth": {
-      let newTree = state.slice();
-      newTree.splice(action.index, 1, {
-        ...newTree[action.index],
-        depth: action.depth,
-      });
-      return newTree;
-    }
-    case "SET_BLOCK_ACTIVE": {
-      let newTree = state.slice();
-      newTree.splice(action.index, 1, {
-        ...newTree[action.index],
-        isActive: action.value,
-      });
-      return newTree;
-    }
-    case "DELETE_BLOCK": {
-      let newTree = state.slice();
-      newTree.splice(action.index, 1);
-      return newTree;
-    }
-    default: {
-      throw new Error(`Unhandled action type: ${action.type}`);
-    }
-  }
-}
-
 export const Page = ({ id, title }) => {
-  const [tree, dispatch] = React.useReducer(treeReducer, null);
+  const [tree, dispatch] = React.useReducer(treeReducer, []);
 
   const { nodeId } = useParams();
   const pageId = id || nodeId;
-  const { data } = useQuery(
-    ["fetchNodes", pageId],
-    async () => {
-      const childrenNodes = await getChildren(pageId);
-      return DFS(childrenNodes);
-    },
-    {
-      staleTime: Infinity,
-    }
-  );
 
   React.useEffect(() => {
-    if (data) {
-      dispatch({
-        type: "SET_TREE",
-        tree: data,
-      });
-      dispatch({
-        type: "SET_BLOCK_ACTIVE",
-        index: data.length - 1,
-        value: true,
-      });
-    }
-  }, [data]);
+    const fetchPageData = async () => {
+      const childrenNodes = await getChildren(pageId);
+
+      // if block has no child blocks
+      if (!childrenNodes.children) {
+        const nodeId = await createEmptyNode(pageId);
+
+        dispatch({
+          type: "ADD_NEW_BLOCK",
+          index: 0,
+          nodeId,
+        });
+      } else {
+        const data = DFS(childrenNodes);
+        dispatch({
+          type: "SET_TREE",
+          tree: data,
+        });
+        dispatch({
+          type: "SET_BLOCK_ACTIVE",
+          index: data.length - 1,
+          value: true,
+        });
+      }
+    };
+
+    fetchPageData();
+  }, []);
 
   const path = `/b/${pageId}`;
   const handleChange = (index) => (event) => {
@@ -143,9 +90,12 @@ export const Page = ({ id, title }) => {
             const code = e.keyCode ? e.keyCode : e.which;
 
             const activeBlockIndex = tree.findIndex((block) => block.isActive);
+            const prevBlockIndex = activeBlockIndex - 1;
             const nextBlockIndex = activeBlockIndex + 1;
             const activeNode = tree[activeBlockIndex];
+            const prevNode = tree[prevBlockIndex];
             const nextNode = tree[nextBlockIndex];
+
 
             const blocksCount = tree.length;
 
@@ -224,27 +174,42 @@ export const Page = ({ id, title }) => {
                 });
               }
             }
+            // shift key
             if (e.keyCode === 9) {
               e.preventDefault();
               if (blocksCount > 1) {
-                const prevBlockIndex = activeBlockIndex - 1;
                 if (prevBlockIndex !== -1) {
                   dispatch({
-                    type: "SET_BLOCK_depth",
+                    type: "SET_BLOCK_DEPTH",
                     index: activeBlockIndex,
-                    depth: tree[prevBlockIndex].depth + 1,
+                    depth: prevNode.depth + 1,
                   });
+                  if(prevNode.depth === activeNode.depth) {
+                    dispatch({
+                      type: "SET_BLOCK_PARENT",
+                      index: activeBlockIndex,
+                      parent: prevNode.nodeId,
+                    })
+                  }
                 }
               }
             }
             if (e.keyCode === 9 && e.shiftKey) {
               e.preventDefault();
-              if (tree[activeBlockIndex].depth > 0) {
+              if (activeNode.depth > 0) {
                 dispatch({
-                  type: "SET_BLOCK_depth",
+                  type: "SET_BLOCK_DEPTH",
                   index: activeBlockIndex,
-                  depth: tree[activeBlockIndex].depth - 1,
+                  depth: activeNode.depth - 1,
                 });
+
+                if(tree[prevBlockIndex].depth === activeNode.depth) {
+                  dispatch({
+                    type: "SET_BLOCK_PARENT",
+                    index: activeBlockIndex,
+                    parent: tree[prevBlockIndex].nodeId,
+                  })
+                }
               }
             }
           }}
