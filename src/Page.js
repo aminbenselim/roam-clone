@@ -7,13 +7,21 @@ import {
   createEmptyNode,
   deleteNode,
   setNodeValue,
+  setNodeParent,
 } from "./dgraph";
-import { DFS } from "./utils/DFS";
-import treeReducer from './reducer'
+import { flattenChildren } from "./utils/FlattenChildren";
+import treeReducer from "./reducer";
 import { Block } from "./Block.js";
 
-const debouncedSet = debounce(
+const KEY = { DEL: 8, TAB: 9, RETURN: 13, UP: 38, DOWN: 40 };
+
+const debouncedSetValue = debounce(
   (nodeId, value, references) => setNodeValue(nodeId, value, references),
+  300
+);
+
+const debouncedSetParent = debounce(
+  (nodeId, parentId) => setNodeParent(nodeId, parentId),
   300
 );
 
@@ -37,7 +45,7 @@ export const Page = ({ id, title }) => {
           nodeId,
         });
       } else {
-        const data = DFS(childrenNodes);
+        const data = flattenChildren(childrenNodes);
         dispatch({
           type: "SET_TREE",
           tree: data,
@@ -62,7 +70,20 @@ export const Page = ({ id, title }) => {
       value,
     });
     // update node value after 0.3s of inactivity
-    debouncedSet(tree[index].nodeId, value);
+    debouncedSetValue(tree[index].nodeId, value);
+  };
+
+  const findNextParent = (depth, index) => {
+    // find the indexes of all the nodes that have the same depth
+    const a = tree.reduce((acc, node, ind) => {
+      return node.depth === depth ? acc.concat(ind) : acc;
+    }, []);
+
+    // return the parent of the most recent node
+    return (
+      tree[a.reverse().find((ind) => ind < index)] &&
+      tree[a.reverse().find((ind) => ind < index)].parentId
+    );
   };
 
   const setBlockActive = (index) => () => {
@@ -96,11 +117,9 @@ export const Page = ({ id, title }) => {
             const prevNode = tree[prevBlockIndex];
             const nextNode = tree[nextBlockIndex];
 
-
             const blocksCount = tree.length;
 
-            //Enter keycode
-            if (code === 13 && !e.shiftKey) {
+            if (code === KEY.RETURN && !e.shiftKey) {
               e.preventDefault();
               // create new node and set it as active block
               let newPosition = Date.now() * 100;
@@ -123,10 +142,11 @@ export const Page = ({ id, title }) => {
                 nodeId,
                 position: newPosition,
                 depth: tree[activeBlockIndex].depth,
+                parentId: activeNode.parentId,
               });
             }
             // Delete keycode
-            if (code === 8) {
+            if (code === KEY.DEL) {
               if (!activeNode.value) {
                 if (tree.length !== 1) {
                   e.preventDefault();
@@ -144,7 +164,7 @@ export const Page = ({ id, title }) => {
               }
             }
             // keyboard navigation
-            if (e.keyCode === 38) {
+            if (e.keyCode === KEY.UP) {
               if (blocksCount > 1) {
                 e.preventDefault();
                 dispatch({
@@ -159,7 +179,7 @@ export const Page = ({ id, title }) => {
                 });
               }
             }
-            if (e.keyCode === 40) {
+            if (e.keyCode === KEY.DOWN) {
               if (blocksCount > 1) {
                 e.preventDefault();
                 dispatch({
@@ -174,41 +194,42 @@ export const Page = ({ id, title }) => {
                 });
               }
             }
-            // shift key
-            if (e.keyCode === 9) {
+            // Tab key
+            if (e.keyCode === KEY.TAB) {
               e.preventDefault();
-              if (blocksCount > 1) {
-                if (prevBlockIndex !== -1) {
+              if (e.shiftKey) {
+                if (activeNode.depth - 1 > -1) {
+                  const newParent =
+                    findNextParent(activeNode.depth - 1, activeBlockIndex) ||
+                    pageId;
                   dispatch({
                     type: "SET_BLOCK_DEPTH",
                     index: activeBlockIndex,
-                    depth: prevNode.depth + 1,
+                    depth: activeNode.depth - 1,
                   });
-                  if(prevNode.depth === activeNode.depth) {
-                    dispatch({
-                      type: "SET_BLOCK_PARENT",
-                      index: activeBlockIndex,
-                      parent: prevNode.nodeId,
-                    })
-                  }
-                }
-              }
-            }
-            if (e.keyCode === 9 && e.shiftKey) {
-              e.preventDefault();
-              if (activeNode.depth > 0) {
-                dispatch({
-                  type: "SET_BLOCK_DEPTH",
-                  index: activeBlockIndex,
-                  depth: activeNode.depth - 1,
-                });
-
-                if(tree[prevBlockIndex].depth === activeNode.depth) {
                   dispatch({
                     type: "SET_BLOCK_PARENT",
                     index: activeBlockIndex,
-                    parent: tree[prevBlockIndex].nodeId,
-                  })
+                    parentId: newParent,
+                  });
+                  debouncedSetParent(activeNode.nodeId, newParent);
+                }
+              } else {
+                if (prevNode && activeNode.depth + 1 <= prevNode.depth + 1) {
+                  const newParent =
+                    findNextParent(activeNode.depth + 1, activeBlockIndex) ||
+                    prevNode.nodeId;
+                  dispatch({
+                    type: "SET_BLOCK_DEPTH",
+                    index: activeBlockIndex,
+                    depth: activeNode.depth + 1,
+                  });
+                  dispatch({
+                    type: "SET_BLOCK_PARENT",
+                    index: activeBlockIndex,
+                    parentId: newParent,
+                  });
+                  debouncedSetParent(activeNode.nodeId, newParent);
                 }
               }
             }

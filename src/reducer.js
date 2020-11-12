@@ -1,11 +1,12 @@
-const generateBlock = (nodeId, depth, position) => ({
+const generateBlock = (nodeId, parentId, depth, position) => ({
   nodeId,
-  isActive: true,
   value: "",
   children: null,
+  references: [],
+  isActive: true,
   depth: depth || 0,
   position: position || Date.now() * 100,
-  references: [],
+  parentId,
 });
 
 export default (state, action) => {
@@ -18,7 +19,7 @@ export default (state, action) => {
       newTree.splice(
         action.index,
         0,
-        generateBlock(action.nodeId, action.depth, action.position)
+        generateBlock(action.nodeId, action.parentId, action.depth, action.position)
       );
       return newTree;
     }
@@ -42,7 +43,7 @@ export default (state, action) => {
       let newTree = state.slice();
       newTree.splice(action.index, 1, {
         ...newTree[action.index],
-        parent: action.parent,
+        parentId: action.parentId,
       });
       return newTree;
     }

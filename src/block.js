@@ -27,7 +27,7 @@ export const Block = ({ block, handleChange, setBlockActive }) => {
 
   const { id: paramId } = useParams();
 
-  const path = `/d/${block.nodeId || paramId}`;
+  const path = `/b/${block.nodeId || paramId}`;
 
   const fetchpages = (query, callback) => {
     if (!query) return;
@@ -83,6 +83,7 @@ export const Block = ({ block, handleChange, setBlockActive }) => {
               __html: block.value ? DOMPurify.sanitize(block.value) : "​",
             }}
             onClick={setBlockActive}
+            style={{ width: "100%" }}
           />
         </>
       )}

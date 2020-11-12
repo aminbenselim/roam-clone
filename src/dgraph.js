@@ -128,3 +128,18 @@ export const setNodeValue = async (nodeId, value, references) => {
     await txn.discard();
   }
 };
+
+export const setNodeParent = async (nodeId, parentId) => {
+  const txn = dgraphClient.newTxn();
+
+  try {
+    await txn.mutate({
+      setNquads: `<${nodeId}> <Node.parent> <${parentId}> .`,
+      commitNow: true,
+    });
+  } catch (error) {
+    console.log({ error });
+  } finally {
+    await txn.discard();
+  }
+};
