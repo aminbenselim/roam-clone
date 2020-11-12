@@ -203,9 +203,8 @@ export const Page = ({ id, title }) => {
                     findNextParent(activeNode.depth - 1, activeBlockIndex) ||
                     pageId;
                   dispatch({
-                    type: "SET_BLOCK_DEPTH",
+                    type: "DECREASE_BLOCK_DEPTH",
                     index: activeBlockIndex,
-                    depth: activeNode.depth - 1,
                   });
                   dispatch({
                     type: "SET_BLOCK_PARENT",
@@ -220,9 +219,8 @@ export const Page = ({ id, title }) => {
                     findNextParent(activeNode.depth + 1, activeBlockIndex) ||
                     prevNode.nodeId;
                   dispatch({
-                    type: "SET_BLOCK_DEPTH",
+                    type: "INCREASE_BLOCK_DEPTH",
                     index: activeBlockIndex,
-                    depth: activeNode.depth + 1,
                   });
                   dispatch({
                     type: "SET_BLOCK_PARENT",
