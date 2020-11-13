@@ -11,8 +11,9 @@ const generateBlock = (nodeId, parentId, depth, position) => ({
 
 const findChildren = (tree, depth, index) => {
   const res = [];
-  let nextInd = index++;
-  while (tree[nextInd].depth < tree[index].depth) {
+  let nextInd = index + 1;
+
+  while (tree[nextInd] && tree[nextInd].depth > tree[index].depth) {
     res.push(nextInd);
     nextInd++;
   }
@@ -50,30 +51,30 @@ export default (state, action) => {
     case "INCREASE_BLOCK_DEPTH": {
       let newTree = state.slice();
       const currentDepth = newTree[action.index].depth;
+      const childrenIndices = findChildren(newTree, currentDepth, action.index);
+      childrenIndices.forEach((childIndex) => {
+        newTree[childIndex].depth += 1;
+      });
+
       newTree.splice(action.index, 1, {
         ...newTree[action.index],
         depth: currentDepth + 1,
       });
 
-      const childrenIndices = findChildren(newTree, currentDepth, action.index);
-
-      childrenIndices.forEach((childIndex) => {
-        newTree[childIndex].depth += 1;
-      });
       return newTree;
     }
     case "DECREASE_BLOCK_DEPTH": {
       let newTree = state.slice();
       const currentDepth = newTree[action.index].depth;
+      const childrenIndices = findChildren(newTree, currentDepth, action.index);
+      childrenIndices.forEach((childIndex) => {
+        newTree[childIndex].depth -= 1;
+      });
       newTree.splice(action.index, 1, {
         ...newTree[action.index],
         depth: currentDepth - 1,
       });
-      const childrenIndices = findChildren(newTree, currentDepth, action.index);
 
-      childrenIndices.forEach((childIndex) => {
-        newTree[childIndex].depth -= 1;
-      });
 
       return newTree;
     }
