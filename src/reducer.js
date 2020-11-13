@@ -75,7 +75,6 @@ export default (state, action) => {
         depth: currentDepth - 1,
       });
 
-
       return newTree;
     }
     case "SET_BLOCK_PARENT": {
@@ -88,9 +87,20 @@ export default (state, action) => {
     }
     case "SET_BLOCK_ACTIVE": {
       let newTree = state.slice();
+
+      // Deactivate the current active block
+      const currentActive = newTree.findIndex((block) => block.isActive);
+      if(currentActive !== -1) {
+        newTree.splice(currentActive, 1, {
+          ...newTree[currentActive],
+          isActive: false,
+        });
+      }
+
+      // Set the desired block as active
       newTree.splice(action.index, 1, {
         ...newTree[action.index],
-        isActive: action.value,
+        isActive: true,
       });
       return newTree;
     }

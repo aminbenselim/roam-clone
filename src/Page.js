@@ -48,7 +48,6 @@ export const Page = ({ id, title }) => {
         dispatch({
           type: "SET_BLOCK_ACTIVE",
           index: data.length - 1,
-          value: true,
         });
       }
     };
@@ -81,15 +80,10 @@ export const Page = ({ id, title }) => {
 
   const setBlockActive = (index) => () => {
     const activeBlockIndex = tree.findIndex((block) => block.isActive);
-    dispatch({
-      type: "SET_BLOCK_ACTIVE",
-      index: activeBlockIndex,
-      value: false,
-    });
+
     dispatch({
       type: "SET_BLOCK_ACTIVE",
       index,
-      value: true,
     });
   };
 
@@ -122,12 +116,6 @@ export const Page = ({ id, title }) => {
                 newPosition = (nextNode.position + activeNode.position) / 2;
               }
               const nodeId = await createEmptyNode(pageId, newPosition);
-              // remove is active from current active block
-              dispatch({
-                type: "SET_BLOCK_ACTIVE",
-                index: activeBlockIndex,
-                value: false,
-              });
               // and add new block after the current active block
               dispatch({
                 type: "ADD_NEW_BLOCK",
@@ -150,7 +138,6 @@ export const Page = ({ id, title }) => {
                   dispatch({
                     type: "SET_BLOCK_ACTIVE",
                     index: activeBlockIndex - 1,
-                    value: true,
                   });
                   deleteNode(tree[activeBlockIndex]);
                 }
@@ -162,13 +149,7 @@ export const Page = ({ id, title }) => {
                 e.preventDefault();
                 dispatch({
                   type: "SET_BLOCK_ACTIVE",
-                  index: activeBlockIndex,
-                  value: false,
-                });
-                dispatch({
-                  type: "SET_BLOCK_ACTIVE",
                   index: (blocksCount + activeBlockIndex - 1) % blocksCount,
-                  value: true,
                 });
               }
             }
@@ -177,13 +158,7 @@ export const Page = ({ id, title }) => {
                 e.preventDefault();
                 dispatch({
                   type: "SET_BLOCK_ACTIVE",
-                  index: activeBlockIndex,
-                  value: false,
-                });
-                dispatch({
-                  type: "SET_BLOCK_ACTIVE",
                   index: (activeBlockIndex + 1) % blocksCount,
-                  value: true,
                 });
               }
             }
