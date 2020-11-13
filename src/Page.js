@@ -15,11 +15,6 @@ import { Block } from "./Block.js";
 
 const KEY = { DEL: 8, TAB: 9, RETURN: 13, UP: 38, DOWN: 40 };
 
-const debouncedSetValue = debounce(
-  (nodeId, value, references) => setNodeValue(nodeId, value, references),
-  300
-);
-
 const debouncedSetParent = debounce(
   (nodeId, parentId) => setNodeParent(nodeId, parentId),
   300
@@ -62,15 +57,13 @@ export const Page = ({ id, title }) => {
   }, []);
 
   const path = `/b/${pageId}`;
-  const handleChange = (index) => (event) => {
-    const value = event.target.value;
+
+  const setNodeValueInTree = (index) => (value) => {
     dispatch({
       type: "SET_BLOCK_VALUE",
       index,
       value,
     });
-    // update node value after 0.3s of inactivity
-    debouncedSetValue(tree[index].nodeId, value);
   };
 
   const findNextParent = (depth, index) => {
@@ -237,7 +230,7 @@ export const Page = ({ id, title }) => {
             <Block
               key={block.nodeId}
               block={block}
-              handleChange={handleChange(index)}
+              setNodeValueInTree={setNodeValueInTree(index)}
               setBlockActive={setBlockActive(index)}
             />
           ))}

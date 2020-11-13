@@ -8,7 +8,6 @@ query queryChildrenByNode($nodeId: string) {
     value: Node.value
     position: Node.position
     children: ~Node.parent (orderasc: Node.position)
-    references: Node.references
     referencedBy: ~Node.references
   }
 }`;
@@ -16,10 +15,10 @@ query queryChildrenByNode($nodeId: string) {
 export const getChildren = async (nodeId) => {
   try {
     const res = await dgraphClient
-    .newTxn({ readOnly: true })
-    .queryWithVars(queryChildrenByNode, {
-      $nodeId: nodeId,
-    });
+      .newTxn({ readOnly: true })
+      .queryWithVars(queryChildrenByNode, {
+        $nodeId: nodeId,
+      });
 
     return res.data.childNodes[0];
   } catch (error) {
@@ -27,29 +26,59 @@ export const getChildren = async (nodeId) => {
   }
 };
 
-export const queryNodesByTitle = val => `
+export const queryNodesByTitle = (val) => `
 query {
-  nodes(func: regexp(Node.title, /^.*${val}.*$/i), first: 5) {
+  exactNode(func: eq(Node.title, "${val}")) {
+    id: uid
+    display: Node.title
+  }
+  nodes(func: regexp(Node.title, /^.+${val}.*$|^.*${val}.+$/i), first: 5) {
     id: uid
     display: Node.title
   }
 }`;
 
 export const getNodesByTitle = async (query) => {
-  try {
-    const res = await dgraphClient
-      .newTxn({ readOnly: true })
-      .query(queryNodesByTitle(query));
+  let suggestions = [];
 
-    return res.data.nodes;
+  // create new transaction
+  const txn = dgraphClient.newTxn();
+
+  try {
+    const res = await txn.query(queryNodesByTitle(query));
+
+    let exactPage = res.data.exactNode;
+
+    if (exactPage.length === 0) {
+      // create a new page with title
+      const mu = await txn.mutate({
+        setNquads: `_:page <Node.title> "${query}" .
+              _:page <dgraph.type> "Node" .`,
+      });
+
+      exactPage = [
+        {
+          id: mu.data.uids.page,
+          display: query,
+        },
+      ];
+    }
+
+    suggestions = exactPage.concat(res.data.nodes);
+
+    txn.commit();
   } catch (error) {
     console.log(error);
+  } finally {
+    txn.discard();
   }
-}
 
-export const queryNodesByValue = val => `
+  return suggestions;
+};
+
+export const queryNodesByValue = (val) => `
 query {
-  nodes(func: regexp(Node.value, /^.*${val}.*$/i) ) (first: 5) {
+  nodes(func: regexp(Node.value, /^.*${val}.*$/i), first: 5) {
     id: uid
     display: Node.value
   }
@@ -65,7 +94,8 @@ export const getNodesByValue = async (query) => {
   } catch (error) {
     console.log(error);
   }
-}
+};
+
 export const createEmptyNode = async (
   parentId,
   position = Date.now() * 100
@@ -115,8 +145,8 @@ export const setNodeValue = async (nodeId, value, references) => {
 
     if (references) {
       await txn.mutate({
-        setNquads: references
-          .map((ref) => `<${nodeId}> <Node.references> "${ref}"`)
+        setNquads: Array.from(references)
+          .map((ref) => `<${nodeId}> <Node.references> <${ref}> .`)
           .join("\n"),
       });
     }
@@ -129,6 +159,45 @@ export const setNodeValue = async (nodeId, value, references) => {
   }
 };
 
+export const setNodeReferences = async (nodeId, references) => {
+  const txn = dgraphClient.newTxn();
+
+  try {
+    if (references) {
+      await txn.mutate({
+        setNquads: Array.from(references)
+          .map((ref) => `<${nodeId}> <Node.references> <${ref}> .`)
+          .join("\n"),
+        commitNow: true,
+      });
+    }
+  } catch (error) {
+    console.log({ error });
+  } finally {
+    await txn.discard();
+  }
+};
+
+export const deleteNodeReferences = async (nodeId, references) => {
+  const txn = dgraphClient.newTxn();
+
+  try {
+    if (references) {
+      await txn.mutate({
+        deleteNquads: Array.from(references)
+          .map((ref) => `<${nodeId}> <Node.references> <${ref}> .`)
+          .join("\n"),
+        commitNow: true,
+      });
+    }
+  } catch (error) {
+    console.log({ error });
+  } finally {
+    await txn.discard();
+  }
+};
+
+
 export const setNodeParent = async (nodeId, parentId) => {
   const txn = dgraphClient.newTxn();
 
@@ -139,6 +208,60 @@ export const setNodeParent = async (nodeId, parentId) => {
     });
   } catch (error) {
     console.log({ error });
+  } finally {
+    await txn.discard();
+  }
+};
+
+const FindPageByTitle = (title) => `query {
+  find(func: eq(Node.title, "${title}")) {
+    nodeId: uid
+  }
+}`;
+
+export const upsertPage = async (title) => {
+  let nodeId;
+
+  // create new transaction
+  const txn = dgraphClient.newTxn();
+
+  try {
+    const res = await txn.query(FindPageByTitle(title));
+    if (res.data.find.length === 1) {
+      nodeId = res.data.find[0].nodeId;
+    } else {
+      // create a new page with title
+      const mu = await txn.mutate({
+        setNquads: `_:page <Node.title> "${title}" .
+        _:page <dgraph.type> "Node" .`,
+      });
+
+      // return the ID of newly created node
+      nodeId = mu.data.uids.page;
+    }
+
+    await txn.commit();
+  } finally {
+    await txn.discard();
+  }
+
+  return nodeId;
+};
+
+export const insertPage = async (title) => {
+  // create new transaction
+  const txn = dgraphClient.newTxn();
+
+  try {
+    // create a new page with title
+    const mu = await txn.mutate({
+      setNquads: `_:page <Node.title> "${title}" .
+          _:page <dgraph.type> "Node" .`,
+      commitNow: true,
+    });
+
+    // return the ID of newly created node
+    return mu.data.uids.page;
   } finally {
     await txn.discard();
   }

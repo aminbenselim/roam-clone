@@ -2,41 +2,8 @@ import React from "react";
 import { format, subDays } from "date-fns";
 import { useInView } from "react-intersection-observer";
 import { dgraphClient } from "./index";
+import {upsertPage } from './dgraph';
 import { Page } from "./Page.js";
-
-const upsertPage = async (title) => {
-  let nodeId;
-
-  // create new transaction
-  const txn = dgraphClient.newTxn();
-
-  try {
-    // query to find if page with this title is available
-    const query = `query {
-      find(func: eq(Node.title, "${title}")) {
-        nodeId: uid
-      }
-    }`;
-    const res = await txn.query(query);
-    if (res.data.find.length === 1) {
-      nodeId = res.data.find[0].nodeId;
-    } else {
-      // create a new page with title
-      const mu = await txn.mutate({
-        setNquads: [`_:page <Node.title>  "${title}" .`],
-      });
-
-      // return the ID of newly created node
-      nodeId = mu.data.uids.page;
-    }
-
-    await txn.commit();
-  } finally {
-    await txn.discard();
-  }
-
-  return nodeId;
-};
 
 export const DailyNotes = () => {
   const [pages, setPages] = React.useState([]);

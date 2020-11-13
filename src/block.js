@@ -2,22 +2,43 @@ import React from "react";
 import { MentionsInput, Mention } from "react-mentions";
 import { Link, useParams } from "react-router-dom";
 import DOMPurify from "dompurify";
-import { getNodesByTitle } from "./dgraph";
+import {
+  getNodesByTitle,
+  setNodeValue,
+  upsertPage,
+  setNodeReferences,
+  deleteNodeReferences,
+  getNodesByValue,
+} from "./dgraph";
 import debounce from "lodash/debounce";
+import differnce from "lodash/difference";
 
-const debouncedGetPages = debounce(
-  (query, callback) =>
-    getNodesByTitle(query)
-      .then((data) => {
-        console.log({ data });
-        return data;
-      })
-      .then(callback),
+import { usePrevious } from "./utils/usePrevious";
+
+const debouncedGetPages = debounce(async (query, callback) => {
+  if (!query || query.length < 3) return;
+  const data = await getNodesByTitle(query);
+
+  callback(data);
+}, 300);
+
+const debouncedGetBlocks = debounce(async (query, callback) => {
+  if (!query || query.length < 3) return;
+
+  const data = await getNodesByValue(query);
+
+  callback(data);
+}, 300);
+
+const debouncedSetValue = debounce(
+  (nodeId, value, references) => setNodeValue(nodeId, value, references),
   300
 );
 
-export const Block = ({ block, handleChange, setBlockActive }) => {
+export const Block = ({ block, setNodeValueInTree, setBlockActive }) => {
   const inputRef = React.useRef(null);
+  const [references, setReferences] = React.useState(new Set());
+  const prevRefs = usePrevious(references);
 
   React.useEffect(() => {
     if (block.isActive) {
@@ -25,13 +46,31 @@ export const Block = ({ block, handleChange, setBlockActive }) => {
     }
   }, [inputRef, block.isActive]);
 
+  React.useEffect(() => {
+    if (prevRefs) {
+      const additions = differnce(Array.from(references), Array.from(prevRefs));
+      const deletions = differnce(Array.from(prevRefs), Array.from(references));
+
+      if (additions.length > 0) {
+        setNodeReferences(additions);
+      }
+      if (deletions.length > 0) {
+        deleteNodeReferences(deletions);
+      }
+    }
+  }, [references, prevRefs]);
+
   const { id: paramId } = useParams();
 
   const path = `/b/${block.nodeId || paramId}`;
 
-  const fetchpages = (query, callback) => {
-    if (!query) return;
-    debouncedGetPages(query, callback);
+  const handleChange = (event, newValue, newPlainTextValue, mentions) => {
+    const value = event.target.value;
+    setNodeValueInTree(value);
+
+    setReferences(new Set(mentions.map((mention) => mention.id)));
+    // update node value after 0.3s of inactivity
+    debouncedSetValue(block.nodeId, value);
   };
 
   return (
@@ -48,27 +87,19 @@ export const Block = ({ block, handleChange, setBlockActive }) => {
           onChange={handleChange}
           inputRef={inputRef}
           className={`block ${block.active ? "active" : ""}`}
+          allowSpaceInQuery
         >
           <Mention
-            markup="[[<a href='/p/__id__'>__display__</a>]]"
+            markup="[[<a href='/b/__id__'>__display__</a>]]"
             trigger="[["
-            data={fetchpages}
+            data={debouncedGetPages}
             displayTransform={(id, display) => `[[${display}]]`}
             appendSpaceOnAdd
           />
           <Mention
-            markup="<a class='highlighted' href='/p/__id__'>__display__</a>"
+            markup="<a class='highlighted' href='/b/__id__'>__display__</a>"
             trigger="(("
-            data={[
-              {
-                id: "id-1",
-                display: "Have breakfast at 9",
-              },
-              {
-                id: "id-2",
-                display: "Roam research is amazing",
-              },
-            ]}
+            data={debouncedGetBlocks}
             displayTransform={(id, display) => `((${id}))`}
             appendSpaceOnAdd
           />

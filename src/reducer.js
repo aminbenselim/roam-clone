@@ -1,5 +1,3 @@
-import range from "lodash/range";
-
 const generateBlock = (nodeId, parentId, depth, position) => ({
   nodeId,
   value: "",
