@@ -25,27 +25,36 @@ const findChildrenIndices = (tree, depth, index) => {
 };
 
 export default (state, action) => {
+  // Create a new tree in order not to mutate the original one.
+  let newTree = state.slice();
+
   switch (action.type) {
     case "SET_TREE": {
       return action.tree;
     }
     case "ADD_NEW_BLOCK": {
-      // Create a new tree in order not to mutate the original one.
-      let newTree = state.slice();
+      const activeBlockIndex = state.findIndex((block) => block.isActive);
+      const activeBlock = state[activeBlockIndex];
+      // Deactivate the current active block
+      newTree.splice(activeBlockIndex, 1, {
+        ...activeBlock,
+        isActive: false,
+      });
+
+      // add new block below the current active block
       newTree.splice(
-        action.index,
+        activeBlockIndex + 1,
         0,
         generateBlock(
           action.nodeId,
-          action.parentId,
-          action.depth,
+          activeBlock.parentId || action.pageId,
+          activeBlock.depth,
           action.position
         )
       );
       return newTree;
     }
     case "SET_BLOCK_VALUE": {
-      let newTree = state.slice();
       newTree.splice(action.index, 1, {
         ...newTree[action.index],
         value: action.value,
@@ -53,7 +62,6 @@ export default (state, action) => {
       return newTree;
     }
     case "SET_BLOCK_PARENT": {
-      let newTree = state.slice();
       newTree.splice(action.index, 1, {
         ...newTree[action.index],
         parentId: action.parentId,
@@ -61,10 +69,13 @@ export default (state, action) => {
       return newTree;
     }
     case "INCREASE_BLOCK_DEPTH": {
-      let newTree = state.slice();
       const currentDepth = newTree[action.index].depth;
       // Increase the depth of the children first
-      const childrenIndices = findChildrenIndices(newTree, currentDepth, action.index);
+      const childrenIndices = findChildrenIndices(
+        newTree,
+        currentDepth,
+        action.index
+      );
       childrenIndices.forEach((childIndex) => {
         newTree[childIndex].depth += 1;
       });
@@ -77,10 +88,13 @@ export default (state, action) => {
       return newTree;
     }
     case "DECREASE_BLOCK_DEPTH": {
-      let newTree = state.slice();
       const currentDepth = newTree[action.index].depth;
       // Decrease the depth of the children first
-      const childrenIndices = findChildrenIndices(newTree, currentDepth, action.index);
+      const childrenIndices = findChildrenIndices(
+        newTree,
+        currentDepth,
+        action.index
+      );
       childrenIndices.forEach((childIndex) => {
         newTree[childIndex].depth -= 1;
       });
@@ -93,11 +107,9 @@ export default (state, action) => {
       return newTree;
     }
     case "SET_BLOCK_ACTIVE": {
-      let newTree = state.slice();
-
       // Deactivate the current active block
       const currentActive = newTree.findIndex((block) => block.isActive);
-      if(currentActive !== -1) {
+      if (currentActive !== -1) {
         newTree.splice(currentActive, 1, {
           ...newTree[currentActive],
           isActive: false,
@@ -112,7 +124,6 @@ export default (state, action) => {
       return newTree;
     }
     case "DELETE_BLOCK": {
-      let newTree = state.slice();
       newTree.splice(action.index, 1);
       return newTree;
     }
