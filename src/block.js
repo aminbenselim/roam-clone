@@ -35,7 +35,7 @@ const debouncedSetValue = debounce(
   300
 );
 
-export const Block = ({ block, setNodeValueInTree, setBlockActive }) => {
+export const Block = ({ block, setBlockValueInTree, setBlockActive }) => {
   const inputRef = React.useRef(null);
   const [references, setReferences] = React.useState(new Set());
   const prevRefs = usePrevious(references);
@@ -52,10 +52,10 @@ export const Block = ({ block, setNodeValueInTree, setBlockActive }) => {
       const deletions = differnce(Array.from(prevRefs), Array.from(references));
 
       if (additions.length > 0) {
-        setNodeReferences(additions);
+        setNodeReferences(block.nodeId, additions);
       }
       if (deletions.length > 0) {
-        deleteNodeReferences(deletions);
+        deleteNodeReferences(block.nodeId, deletions);
       }
     }
   }, [references, prevRefs]);
@@ -66,7 +66,7 @@ export const Block = ({ block, setNodeValueInTree, setBlockActive }) => {
 
   const handleChange = (event, newValue, newPlainTextValue, mentions) => {
     const value = event.target.value;
-    setNodeValueInTree(value);
+    setBlockValueInTree(value);
 
     setReferences(new Set(mentions.map((mention) => mention.id)));
     // update node value after 0.3s of inactivity
