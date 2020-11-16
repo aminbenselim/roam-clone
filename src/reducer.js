@@ -35,11 +35,14 @@ export default (state, action) => {
     case "ADD_NEW_BLOCK": {
       const activeBlockIndex = state.findIndex((block) => block.isActive);
       const activeBlock = state[activeBlockIndex];
-      // Deactivate the current active block
-      newTree.splice(activeBlockIndex, 1, {
-        ...activeBlock,
-        isActive: false,
-      });
+
+      if (activeBlockIndex !== -1) {
+        // Deactivate the current active block
+        newTree.splice(activeBlockIndex, 1, {
+          ...activeBlock,
+          isActive: false,
+        });
+      }
 
       // add new block below the current active block
       newTree.splice(
@@ -47,11 +50,12 @@ export default (state, action) => {
         0,
         generateBlock(
           action.nodeId,
-          activeBlock.parentId || action.pageId,
-          activeBlock.depth,
+          activeBlock ? activeBlock.parentId : action.pageId,
+          activeBlock ? activeBlock.depth : 0,
           action.position
         )
       );
+
       return newTree;
     }
     case "SET_BLOCK_VALUE": {
