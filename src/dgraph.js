@@ -1,3 +1,4 @@
+import groupBy from "lodash/groupBy";
 import { dgraphClient } from "./index";
 
 export const queryChildrenByNode = `
@@ -78,7 +79,7 @@ export const getNodesByTitle = async (query) => {
 
 export const queryNodesByValue = (val) => `
 query {
-  nodes(func: regexp(Node.value, /^.*${val}.*$/i), first: 5) {
+  nodes(func: regexp(Node.value, /^.*${val}.*$/i),first: 5) {
     id: uid
     display: Node.value
   }
@@ -197,7 +198,6 @@ export const deleteNodeReferences = async (nodeId, references) => {
   }
 };
 
-
 export const setNodeParent = async (nodeId, parentId) => {
   const txn = dgraphClient.newTxn();
 
@@ -262,6 +262,55 @@ export const insertPage = async (title) => {
 
     // return the ID of newly created node
     return mu.data.uids.page;
+  } finally {
+    await txn.discard();
+  }
+};
+
+export const findReferences = async (nodeId) => {
+  const txn = dgraphClient.newTxn();
+
+  try {
+    // find recursively the nodeIds that reference the current block
+    const res = await txn.query(`
+    query {
+      q(func: uid(${nodeId})) @recurse {
+        nodeId: uid
+        referencedBy: ~Node.references
+      }
+    }`);
+    const referencedBy = res.data.q[0].referencedBy;
+    if (!referencedBy) return [];
+
+    // for each nodeId  that references the block, find the title, the value, and nodeId of the page.
+    const res2 = await txn.query(`
+    query {
+      ${referencedBy.map(
+        (
+          item,
+          index
+        ) => `q${index}(func: uid(${item.nodeId})) @recurse @normalize{
+          nodeId: uid
+          value: Node.value
+          title: Node.title
+          page: Node.parent
+        }`
+      )}}`);
+
+    return groupBy(
+      referencedBy.map((item, ind) => {
+        const r = res2.data[`q${ind}`][0];
+
+        const value = typeof r.value === 'string' ? r.value : r.value[0];
+        return {
+          nodeId: item.nodeId,
+          pageTitle: r.title,
+          value,
+          pageId: r.nodeId[r.nodeId.length - 1],
+        };
+      }),
+      "pageId"
+    );
   } finally {
     await txn.discard();
   }

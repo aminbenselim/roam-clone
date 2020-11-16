@@ -49,7 +49,7 @@ export const DailyNotes = () => {
     <div className="daily-notes">
       <h1>Daily Notes</h1>
       {pages.map((page) => (
-        <Page key={page.nodeId} title={page.title} id={page.nodeId} />
+        <Page key={page.nodeId} title={page.title} id={page.nodeId} showRefs={false}/>
       ))}
       {/* used for infinite loading of days */}
       <div ref={ref}></div>

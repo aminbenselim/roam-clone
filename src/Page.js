@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
 import debounce from "lodash/debounce";
+import DOMPurify from "dompurify";
 
 import {
   getChildren,
@@ -20,18 +21,21 @@ const debouncedSetParent = debounce(
   300
 );
 
-export const Page = ({ id, title }) => {
+export const Page = ({ id, title, showRefs }) => {
   const [tree, dispatch] = React.useReducer(treeReducer, []);
-
+  const [pageTitle, setTitle] = React.useState(title);
+  const [referencedBy, setReferencedBy] = React.useState({});
   const { nodeId } = useParams();
   const pageId = id || nodeId;
 
   React.useEffect(() => {
     const fetchPageData = async () => {
       const childrenNodes = await getChildren(pageId);
+      const data = flattenChildren(childrenNodes);
 
+      setTitle(childrenNodes.title);
       // if page has no child blocks
-      if (!childrenNodes.children) {
+      if (data.length === 0) {
         const nodeId = await createEmptyNode(pageId);
 
         dispatch({
@@ -41,7 +45,6 @@ export const Page = ({ id, title }) => {
           pageId,
         });
       } else {
-        const data = flattenChildren(childrenNodes);
         dispatch({
           type: "SET_TREE",
           tree: data,
@@ -54,11 +57,9 @@ export const Page = ({ id, title }) => {
     };
 
     fetchPageData();
-    // findReferences(pageId)
   }, []);
 
   const path = `/b/${pageId}`;
-
 
   const findNextParent = (depth, index) => {
     // find the indexes of all the nodes that have the same depth
@@ -70,16 +71,16 @@ export const Page = ({ id, title }) => {
     return (
       tree[a.reverse().find((ind) => ind < index)] &&
       tree[a.reverse().find((ind) => ind < index)].parentId
-      );
-    };
+    );
+  };
 
-    const setBlockValueInTree = (index) => (value) => {
-      dispatch({
-        type: "SET_BLOCK_VALUE",
-        index,
-        value,
-      });
-    };
+  const setBlockValueInTree = (index) => (value) => {
+    dispatch({
+      type: "SET_BLOCK_VALUE",
+      index,
+      value,
+    });
+  };
   const setBlockActive = (index) => () => {
     dispatch({
       type: "SET_BLOCK_ACTIVE",
@@ -87,10 +88,16 @@ export const Page = ({ id, title }) => {
     });
   };
 
+  const fetchReferences = async () => {
+    const refs = await findReferences(pageId);
+
+    setReferencedBy(refs);
+  };
+
   return (
     <div className="page">
       <h2>
-        <Link to={path}>{title}</Link>
+        <Link to={path}>{pageTitle}</Link>
       </h2>
       {tree && (
         <div
@@ -185,7 +192,6 @@ export const Page = ({ id, title }) => {
                   debouncedSetParent(activeBlock.nodeId, newParent);
                 }
               } else {
-
                 if (prevBlock && activeBlock.depth <= prevBlock.depth) {
                   // Increase the depth of the current block
                   dispatch({
@@ -215,6 +221,32 @@ export const Page = ({ id, title }) => {
               setBlockActive={setBlockActive(index)}
             />
           ))}
+          {showRefs && (
+            <div>
+              <h2 onClick={fetchReferences}>References</h2>
+              <ul>
+                {Object.entries(referencedBy).map(([pageId, refs]) => (
+                  <li key={pageId}>
+                    <Link to={`/b/${pageId}`}>{refs[0].pageTitle}</Link>
+                    <ul>
+                      {refs.map((ref) => (
+                        <li key={ref.nodeId}>
+                          <Link to={`/b/${ref.nodeId}`}>
+                            <div
+                              dangerouslySetInnerHTML={{
+                                __html: ref.value ? ref.value : " ",
+                              }}
+                              style={{ width: "100%" }}
+                            />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>

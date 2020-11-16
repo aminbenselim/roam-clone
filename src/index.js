@@ -1,10 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
-import {
-  QueryCache,
-  ReactQueryCacheProvider,
-} from "react-query";
+import { QueryCache, ReactQueryCacheProvider } from "react-query";
 
 import "./styles.css";
 import { DailyNotes } from "./DailyNotes";
@@ -17,7 +14,7 @@ const queryCache = new QueryCache();
 const dgraph = require("dgraph-js-http");
 const clientStub = new dgraph.DgraphClientStub(
   // addr: optional, default: "localhost:9080"
-  DQL_ENDPOINT,
+  DQL_ENDPOINT
 );
 
 export const dgraphClient = new dgraph.DgraphClient(clientStub);
@@ -40,7 +37,7 @@ const App = () => {
           </div>
 
           <Switch>
-            <Route path="/b/:nodeId" children={<Page />} />
+            <Route path="/b/:nodeId" children={<Page showRefs={true} />} />
             <Route exact path="/">
               <DailyNotes />
             </Route>
