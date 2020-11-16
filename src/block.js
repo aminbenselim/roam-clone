@@ -97,6 +97,14 @@ export const Block = ({ block, setBlockValueInTree, setBlockActive }) => {
             appendSpaceOnAdd
           />
           <Mention
+            markup="#<a href='/b/__id__'>__display__</a>"
+            trigger="#"
+            data={debouncedGetPages}
+            displayTransform={(id, display) => `#${display}`}
+            appendSpaceOnAdd
+          />
+
+          <Mention
             markup="<a class='highlighted' href='/b/__id__'>__display__</a>"
             trigger="(("
             data={debouncedGetBlocks}
@@ -111,7 +119,7 @@ export const Block = ({ block, setBlockValueInTree, setBlockActive }) => {
           </Link>
           <div
             dangerouslySetInnerHTML={{
-              __html: block.value ? DOMPurify.sanitize(block.value) : "​",
+              __html: block.value ? DOMPurify.sanitize(block.value) : " ",
             }}
             onClick={setBlockActive}
             style={{ width: "100%" }}
