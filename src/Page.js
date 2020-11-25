@@ -49,7 +49,7 @@ export const Page = ({ id, title, showRefs }) => {
           list: data,
         });
         dispatch({
-          type: "SET_BLOCK_ACTIVE",
+          type: "SET_BLOCK_FOCUSED",
           index: data.length - 1,
         });
       }
@@ -80,9 +80,9 @@ export const Page = ({ id, title, showRefs }) => {
       value,
     });
   };
-  const setBlockActive = (index) => () => {
+  const setBlockFocused = (index) => () => {
     dispatch({
-      type: "SET_BLOCK_ACTIVE",
+      type: "SET_BLOCK_FOCUSED",
       index,
     });
   };
@@ -103,10 +103,10 @@ export const Page = ({ id, title, showRefs }) => {
           onKeyDown={async (e) => {
             const code = e.keyCode ? e.keyCode : e.which;
 
-            const activeBlockIndex = list.findIndex((block) => block.isActive);
-            const prevBlockIndex = activeBlockIndex - 1;
-            const nextBlockIndex = activeBlockIndex + 1;
-            const activeBlock = list[activeBlockIndex];
+            const focusedBlockIndex = list.findIndex((block) => block.isFocused);
+            const prevBlockIndex = focusedBlockIndex - 1;
+            const nextBlockIndex = focusedBlockIndex + 1;
+            const focusedBlock = list[focusedBlockIndex];
             const prevBlock = list[prevBlockIndex];
             const nextBlock = list[nextBlockIndex];
 
@@ -118,11 +118,11 @@ export const Page = ({ id, title, showRefs }) => {
               let newPosition = Date.now() * 100;
               // if new node is between two nodes, its position is the average
               // of the adjacent nodes positions
-              if (nextBlock && nextBlock.depth === activeBlock.depth) {
-                newPosition = (nextBlock.position + activeBlock.position) / 2;
+              if (nextBlock && nextBlock.depth === focusedBlock.depth) {
+                newPosition = (nextBlock.position + focusedBlock.position) / 2;
               }
               const nodeId = await createEmptyNode(pageId, newPosition);
-              // and add new block after the current active block
+              // and add new block after the current focused block
               dispatch({
                 type: "ADD_NEW_BLOCK",
                 nodeId,
@@ -135,78 +135,74 @@ export const Page = ({ id, title, showRefs }) => {
               if (blocksCount === 1) {
                 return;
               }
-              if (!activeBlock.value) {
+              if (!focusedBlock.value) {
                 e.preventDefault();
-                // delete the active block
+                // delete the focused block
                 dispatch({
                   type: "DELETE_BLOCK",
-                  index: activeBlockIndex,
+                  index: focusedBlockIndex,
                 });
                 dispatch({
-                  type: "SET_BLOCK_ACTIVE",
+                  type: "SET_BLOCK_FOCUSED",
                   index: prevBlockIndex,
                 });
-                deleteNode(list[activeBlockIndex]);
+                deleteNode(list[focusedBlockIndex]);
               }
             }
             // keyboard navigation
             if (e.keyCode === KEY.UP) {
-              if (blocksCount > 1) {
                 e.preventDefault();
                 dispatch({
-                  type: "SET_BLOCK_ACTIVE",
-                  index: (blocksCount + activeBlockIndex - 1) % blocksCount,
+                  type: "SET_BLOCK_FOCUSED",
+                  index: (blocksCount + focusedBlockIndex - 1) % blocksCount,
                 });
-              }
             }
             if (e.keyCode === KEY.DOWN) {
-              if (blocksCount > 1) {
                 e.preventDefault();
                 dispatch({
-                  type: "SET_BLOCK_ACTIVE",
-                  index: (activeBlockIndex + 1) % blocksCount,
+                  type: "SET_BLOCK_FOCUSED",
+                  index: (focusedBlockIndex + 1) % blocksCount,
                 });
-              }
             }
             // Tab key press
             if (e.keyCode === KEY.TAB) {
               e.preventDefault();
               // Shift + Tab press
               if (e.shiftKey) {
-                if (activeBlock.depth > 0) {
+                if (focusedBlock.depth > 0) {
                   // first decrease the depth of the block
                   dispatch({
                     type: "DECREASE_BLOCK_DEPTH",
-                    index: activeBlockIndex,
+                    index: focusedBlockIndex,
                   });
                   // set th new parent of the block
                   const newParent =
-                    findNextParent(activeBlock.depth - 1, activeBlockIndex) ||
+                    findNextParent(focusedBlock.depth - 1, focusedBlockIndex) ||
                     pageId;
                   dispatch({
                     type: "SET_BLOCK_PARENT",
-                    index: activeBlockIndex,
+                    index: focusedBlockIndex,
                     parentId: newParent,
                   });
-                  debouncedSetParent(activeBlock.nodeId, newParent);
+                  debouncedSetParent(focusedBlock.nodeId, newParent);
                 }
               } else {
-                if (prevBlock && activeBlock.depth <= prevBlock.depth) {
+                if (prevBlock && focusedBlock.depth <= prevBlock.depth) {
                   // Increase the depth of the current block
                   dispatch({
                     type: "INCREASE_BLOCK_DEPTH",
-                    index: activeBlockIndex,
+                    index: focusedBlockIndex,
                   });
                   // set the new parent of the block
                   const newParent =
-                    findNextParent(activeBlock.depth + 1, activeBlockIndex) ||
+                    findNextParent(focusedBlock.depth + 1, focusedBlockIndex) ||
                     prevBlock.nodeId;
                   dispatch({
                     type: "SET_BLOCK_PARENT",
-                    index: activeBlockIndex,
+                    index: focusedBlockIndex,
                     parentId: newParent,
                   });
-                  debouncedSetParent(activeBlock.nodeId, newParent);
+                  debouncedSetParent(focusedBlock.nodeId, newParent);
                 }
               }
             }
@@ -217,7 +213,7 @@ export const Page = ({ id, title, showRefs }) => {
               key={block.nodeId}
               block={block}
               setBlockValueInList={setBlockValueInList(index)}
-              setBlockActive={setBlockActive(index)}
+              setBlockFocused={setBlockFocused(index)}
             />
           ))}
           {showRefs && (

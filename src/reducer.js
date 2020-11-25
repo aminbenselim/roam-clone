@@ -4,7 +4,7 @@ const generateBlock = (nodeId, parentId, depth, position) => ({
   value: "",
   children: null,
   references: [],
-  isActive: true,
+  isFocused: true,
   depth: depth || 0,
   position: position || Date.now() * 100,
   parentId,
@@ -33,25 +33,25 @@ export default (state, action) => {
       return action.list;
     }
     case "ADD_NEW_BLOCK": {
-      const activeBlockIndex = state.findIndex((block) => block.isActive);
-      const activeBlock = state[activeBlockIndex];
+      const focusedBlockIndex = state.findIndex((block) => block.isFocused);
+      const focusedBlock = state[focusedBlockIndex];
 
-      if (activeBlockIndex !== -1) {
-        // Deactivate the current active block
-        newList.splice(activeBlockIndex, 1, {
-          ...activeBlock,
-          isActive: false,
+      if (focusedBlockIndex !== -1) {
+        // Deactivate the current focused block
+        newList.splice(focusedBlockIndex, 1, {
+          ...focusedBlock,
+          isFocused: false,
         });
       }
 
-      // add new block below the current active block
+      // add new block below the current focused block
       newList.splice(
-        activeBlockIndex + 1,
+        focusedBlockIndex + 1,
         0,
         generateBlock(
           action.nodeId,
-          activeBlock ? activeBlock.parentId : action.pageId,
-          activeBlock ? activeBlock.depth : 0,
+          focusedBlock ? focusedBlock.parentId : action.pageId,
+          focusedBlock ? focusedBlock.depth : 0,
           action.position
         )
       );
@@ -110,20 +110,20 @@ export default (state, action) => {
 
       return newList;
     }
-    case "SET_BLOCK_ACTIVE": {
-      // Deactivate the current active block
-      const currentActive = newList.findIndex((block) => block.isActive);
-      if (currentActive !== -1) {
-        newList.splice(currentActive, 1, {
-          ...newList[currentActive],
-          isActive: false,
+    case "SET_BLOCK_FOCUSED": {
+      // Deactivate the current focused block
+      const currentFocused = newList.findIndex((block) => block.isFocused);
+      if (currentFocused !== -1) {
+        newList.splice(currentFocused, 1, {
+          ...newList[currentFocused],
+          isFocused: false,
         });
       }
 
-      // Set the desired block as active
+      // Set the desired block as focused
       newList.splice(action.index, 1, {
         ...newList[action.index],
-        isActive: true,
+        isFocused: true,
       });
       return newList;
     }

@@ -36,16 +36,16 @@ const debouncedSetValue = debounce(
   300
 );
 
-export const Block = ({ block, setBlockValueInList, setBlockActive }) => {
+export const Block = ({ block, setBlockValueInList, setBlockFocused }) => {
   const inputRef = React.useRef(null);
   const [references, setReferences] = React.useState(new Set());
   const prevRefs = usePrevious(references);
 
   React.useEffect(() => {
-    if (block.isActive) {
+    if (block.isFocused) {
       inputRef && inputRef.current.focus();
     }
-  }, [inputRef, block.isActive]);
+  }, [inputRef, block.isFocused]);
 
   React.useEffect(() => {
     if (prevRefs) {
@@ -82,12 +82,12 @@ export const Block = ({ block, setBlockValueInList, setBlockActive }) => {
         fontSize: `${16 - block.depth * 0.2} px`,
       }}
     >
-      {block.isActive ? (
+      {block.isFocused ? (
         <MentionsInput
           value={block.value}
           onChange={handleChange}
           inputRef={inputRef}
-          className={`block ${block.active ? "active" : ""}`}
+          className={`block ${block.focused ? "focused" : ""}`}
           allowSpaceInQuery
         >
           <Mention
@@ -122,7 +122,7 @@ export const Block = ({ block, setBlockValueInList, setBlockActive }) => {
             dangerouslySetInnerHTML={{
               __html: block.value ? DOMPurify.sanitize(marked(block.value)) : " ",
             }}
-            onClick={setBlockActive}
+            onClick={setBlockFocused}
             style={{ width: "100%" }}
           />
         </>
