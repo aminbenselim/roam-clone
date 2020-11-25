@@ -1,7 +1,6 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
 import debounce from "lodash/debounce";
-import DOMPurify from "dompurify";
 
 import {
   getChildren,
@@ -11,7 +10,7 @@ import {
   findReferences,
 } from "./dgraph";
 import { flattenChildren } from "./utils/FlattenChildren";
-import treeReducer from "./reducer";
+import listReducer from "./reducer";
 import { Block } from "./Block.js";
 
 const KEY = { DEL: 8, TAB: 9, RETURN: 13, UP: 38, DOWN: 40 };
@@ -22,7 +21,7 @@ const debouncedSetParent = debounce(
 );
 
 export const Page = ({ id, title, showRefs }) => {
-  const [tree, dispatch] = React.useReducer(treeReducer, []);
+  const [list, dispatch] = React.useReducer(listReducer, []);
   const [pageTitle, setTitle] = React.useState(title);
   const [referencedBy, setReferencedBy] = React.useState({});
   const { nodeId } = useParams();
@@ -46,8 +45,8 @@ export const Page = ({ id, title, showRefs }) => {
         });
       } else {
         dispatch({
-          type: "SET_TREE",
-          tree: data,
+          type: "SET_LIST",
+          list: data,
         });
         dispatch({
           type: "SET_BLOCK_ACTIVE",
@@ -63,18 +62,18 @@ export const Page = ({ id, title, showRefs }) => {
 
   const findNextParent = (depth, index) => {
     // find the indexes of all the nodes that have the same depth
-    const a = tree.reduce((acc, node, ind) => {
+    const a = list.reduce((acc, node, ind) => {
       return node.depth === depth ? acc.concat(ind) : acc;
     }, []);
 
     // return the parent of the most recent node
     return (
-      tree[a.reverse().find((ind) => ind < index)] &&
-      tree[a.reverse().find((ind) => ind < index)].parentId
+      list[a.reverse().find((ind) => ind < index)] &&
+      list[a.reverse().find((ind) => ind < index)].parentId
     );
   };
 
-  const setBlockValueInTree = (index) => (value) => {
+  const setBlockValueInList = (index) => (value) => {
     dispatch({
       type: "SET_BLOCK_VALUE",
       index,
@@ -99,19 +98,19 @@ export const Page = ({ id, title, showRefs }) => {
       <h2>
         <Link to={path}>{pageTitle}</Link>
       </h2>
-      {tree && (
+      {list && (
         <div
           onKeyDown={async (e) => {
             const code = e.keyCode ? e.keyCode : e.which;
 
-            const activeBlockIndex = tree.findIndex((block) => block.isActive);
+            const activeBlockIndex = list.findIndex((block) => block.isActive);
             const prevBlockIndex = activeBlockIndex - 1;
             const nextBlockIndex = activeBlockIndex + 1;
-            const activeBlock = tree[activeBlockIndex];
-            const prevBlock = tree[prevBlockIndex];
-            const nextBlock = tree[nextBlockIndex];
+            const activeBlock = list[activeBlockIndex];
+            const prevBlock = list[prevBlockIndex];
+            const nextBlock = list[nextBlockIndex];
 
-            const blocksCount = tree.length;
+            const blocksCount = list.length;
 
             // Return key press
             if (code === KEY.RETURN && !e.shiftKey) {
@@ -147,7 +146,7 @@ export const Page = ({ id, title, showRefs }) => {
                   type: "SET_BLOCK_ACTIVE",
                   index: prevBlockIndex,
                 });
-                deleteNode(tree[activeBlockIndex]);
+                deleteNode(list[activeBlockIndex]);
               }
             }
             // keyboard navigation
@@ -213,11 +212,11 @@ export const Page = ({ id, title, showRefs }) => {
             }
           }}
         >
-          {tree.map((block, index) => (
+          {list.map((block, index) => (
             <Block
               key={block.nodeId}
               block={block}
-              setBlockValueInTree={setBlockValueInTree(index)}
+              setBlockValueInList={setBlockValueInList(index)}
               setBlockActive={setBlockActive(index)}
             />
           ))}

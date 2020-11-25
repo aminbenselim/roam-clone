@@ -2,6 +2,7 @@ import React from "react";
 import { MentionsInput, Mention } from "react-mentions";
 import { Link, useParams } from "react-router-dom";
 import DOMPurify from "dompurify";
+import marked from 'marked';
 import {
   getNodesByTitle,
   setNodeValue,
@@ -35,7 +36,7 @@ const debouncedSetValue = debounce(
   300
 );
 
-export const Block = ({ block, setBlockValueInTree, setBlockActive }) => {
+export const Block = ({ block, setBlockValueInList, setBlockActive }) => {
   const inputRef = React.useRef(null);
   const [references, setReferences] = React.useState(new Set());
   const prevRefs = usePrevious(references);
@@ -66,7 +67,7 @@ export const Block = ({ block, setBlockValueInTree, setBlockActive }) => {
 
   const handleChange = (event, newValue, newPlainTextValue, mentions) => {
     const value = event.target.value;
-    setBlockValueInTree(value);
+    setBlockValueInList(value);
 
     setReferences(new Set(mentions.map((mention) => mention.id)));
     // update node value after 0.3s of inactivity
@@ -119,7 +120,7 @@ export const Block = ({ block, setBlockValueInTree, setBlockActive }) => {
           </Link>
           <div
             dangerouslySetInnerHTML={{
-              __html: block.value ? DOMPurify.sanitize(block.value) : " ",
+              __html: block.value ? DOMPurify.sanitize(marked(block.value)) : " ",
             }}
             onClick={setBlockActive}
             style={{ width: "100%" }}
