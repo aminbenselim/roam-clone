@@ -1,10 +1,15 @@
 import omit from "lodash/omit";
 
 export const flattenChildren = (node) => {
-  const result = [];
-  const DFS = (node, parentId, depth = -1) => {
+  const result = {
+    title: node.title,
+    decendentBlocks: [],
+  };
+
+  const DFS = (node, parentId, depth = 0) => {
     if (!node.title) {
-      result.push({
+      result.decendentBlocks.push({
+        // we remove the children from each block we pass
         ...omit(node, ["children"]),
         depth,
         parentId,

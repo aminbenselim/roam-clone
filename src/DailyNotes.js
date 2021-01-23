@@ -1,8 +1,7 @@
 import React from "react";
 import { format, subDays } from "date-fns";
 import { useInView } from "react-intersection-observer";
-import { dgraphClient } from "./index";
-import {upsertPage } from './dgraph';
+import { upsertPage } from './dgraph';
 import { Page } from "./Page.js";
 
 export const DailyNotes = () => {

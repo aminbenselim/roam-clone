@@ -5,8 +5,6 @@ import DOMPurify from "dompurify";
 import marked from 'marked';
 import {
   getNodesByTitle,
-  setNodeValue,
-  upsertPage,
   setNodeReferences,
   deleteNodeReferences,
   getNodesByValue,
@@ -30,11 +28,6 @@ const debouncedGetBlocks = debounce(async (query, callback) => {
 
   callback(data);
 }, 300);
-
-const debouncedSetValue = debounce(
-  (nodeId, value, references) => setNodeValue(nodeId, value, references),
-  300
-);
 
 export const Block = ({ block, setBlockValueInList, setBlockFocused }) => {
   const inputRef = React.useRef(null);
@@ -70,8 +63,6 @@ export const Block = ({ block, setBlockValueInList, setBlockFocused }) => {
     setBlockValueInList(value);
 
     setReferences(new Set(mentions.map((mention) => mention.id)));
-    // update node value after 0.3s of inactivity
-    debouncedSetValue(block.nodeId, value);
   };
 
   return (

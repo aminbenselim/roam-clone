@@ -1,12 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import { QueryCache, ReactQueryCacheProvider } from "react-query";
+import { Auth0Provider } from "@auth0/auth0-react";
 
-import "./styles.css";
-import { DailyNotes } from "./DailyNotes";
-import { Page } from "./Page";
-import ScrollToTop from "./utils/ScrollToTop";
+import App from "./App";
 
 const DQL_ENDPOINT = "https://graph.eu-central-1.aws.cloud.dgraph.io";
 const queryCache = new QueryCache();
@@ -21,31 +18,15 @@ export const dgraphClient = new dgraph.DgraphClient(clientStub);
 dgraphClient.setDebugMode(true);
 dgraphClient.setSlashApiKey("leCS/j5JreVcBb380ias15VRwq1y/04ItGXo6rBhlIE=");
 
-const App = () => {
-  return (
+ReactDOM.render(
+  <Auth0Provider
+    domain="roam-clone.eu.auth0.com"
+    clientId="HPwjzL5F0F14DOH9zDbbtqYvk3PExLr7"
+    redirectUri={window.location.origin}
+  >
     <ReactQueryCacheProvider queryCache={queryCache}>
-      <Router>
-        <ScrollToTop />
-        <>
-          <div className="header">
-            <ul>
-              <li>
-                <Link to="/">Daily Notes</Link>
-              </li>
-            </ul>
-            <hr />
-          </div>
-
-          <Switch>
-            <Route path="/b/:nodeId" children={<Page showRefs={true} />} />
-            <Route exact path="/">
-              <DailyNotes />
-            </Route>
-          </Switch>
-        </>
-      </Router>
+      <App />
     </ReactQueryCacheProvider>
-  );
-};
-
-ReactDOM.render(<App />, document.getElementById("root"));
+  </Auth0Provider>,
+  document.getElementById("root")
+);

@@ -1,12 +1,9 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
-import debounce from "lodash/debounce";
 
 import {
   getChildren,
   createEmptyNode,
-  deleteNode,
-  setNodeParent,
   findReferences,
 } from "./dgraph";
 import { flattenChildren } from "./utils/FlattenChildren";
@@ -14,11 +11,6 @@ import listReducer from "./reducer";
 import { Block } from "./Block.js";
 
 const KEY = { DEL: 8, TAB: 9, RETURN: 13, UP: 38, DOWN: 40 };
-
-const debouncedSetParent = debounce(
-  (nodeId, parentId) => setNodeParent(nodeId, parentId),
-  300
-);
 
 export const Page = ({ id, title, showRefs }) => {
   const [list, dispatch] = React.useReducer(listReducer, []);
@@ -29,14 +21,15 @@ export const Page = ({ id, title, showRefs }) => {
 
   React.useEffect(() => {
     const fetchPageData = async () => {
-      const childrenNodes = await getChildren(pageId);
-      const data = flattenChildren(childrenNodes);
-
-      setTitle(childrenNodes.title);
-      // if page has no child blocks
-      if (data.length === 0) {
+      const childNodes = await getChildren(pageId);
+      const {title, decendentBlocks} = flattenChildren(childrenNodes);
+      // Set title for the page
+      setTitle(title);
+      // If page has no decendent blocks
+      if (decendentBlocks.length === 0) {
+        // Create empty block
         const nodeId = await createEmptyNode(pageId);
-
+        // Add the block to the list of decendent blocks
         dispatch({
           type: "ADD_NEW_BLOCK",
           index: 0,
@@ -44,13 +37,15 @@ export const Page = ({ id, title, showRefs }) => {
           pageId,
         });
       } else {
+        // Set list of decendent blocks
         dispatch({
           type: "SET_LIST",
-          list: data,
+          list: decendentBlocks,
         });
+        // Set the focus on the last block of the list.
         dispatch({
           type: "SET_BLOCK_FOCUSED",
-          index: data.length - 1,
+          index: decendentBlocks.length - 1,
         });
       }
     };
@@ -102,6 +97,7 @@ export const Page = ({ id, title, showRefs }) => {
         <div
           onKeyDown={async (e) => {
             const code = e.keyCode ? e.keyCode : e.which;
+            const shiftKeyPressed = e.shiftKey;
 
             const focusedBlockIndex = list.findIndex((block) => block.isFocused);
             const prevBlockIndex = focusedBlockIndex - 1;
@@ -113,7 +109,7 @@ export const Page = ({ id, title, showRefs }) => {
             const blocksCount = list.length;
 
             // Return key press
-            if (code === KEY.RETURN && !e.shiftKey) {
+            if (code === KEY.RETURN && !shiftKeyPressed) {
               e.preventDefault();
               let newPosition = Date.now() * 100;
               // if new node is between two nodes, its position is the average
@@ -146,7 +142,6 @@ export const Page = ({ id, title, showRefs }) => {
                   type: "SET_BLOCK_FOCUSED",
                   index: prevBlockIndex,
                 });
-                deleteNode(list[focusedBlockIndex]);
               }
             }
             // keyboard navigation
@@ -184,7 +179,6 @@ export const Page = ({ id, title, showRefs }) => {
                     index: focusedBlockIndex,
                     parentId: newParent,
                   });
-                  debouncedSetParent(focusedBlock.nodeId, newParent);
                 }
               } else {
                 if (prevBlock && focusedBlock.depth <= prevBlock.depth) {
@@ -202,7 +196,6 @@ export const Page = ({ id, title, showRefs }) => {
                     index: focusedBlockIndex,
                     parentId: newParent,
                   });
-                  debouncedSetParent(focusedBlock.nodeId, newParent);
                 }
               }
             }
