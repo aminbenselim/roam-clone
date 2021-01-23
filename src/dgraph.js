@@ -27,7 +27,7 @@ export const getChildren = async (nodeId) => {
   }
 };
 
-export const queryNodesByTitle = (val) => `
+const queryNodesByTitle = (val) => `
 query {
   exactNode(func: eq(Node.title, "${val}")) {
     id: uid
@@ -77,7 +77,7 @@ export const getNodesByTitle = async (query) => {
   return suggestions;
 };
 
-export const queryNodesByValue = (val) => `
+const queryNodesByValue = (val) => `
 query {
   nodes(func: regexp(Node.value, /^.*${val}.*$/i),first: 5) {
     id: uid

@@ -49,12 +49,12 @@ export default (state, action) => {
     case "ADD_NEW_BLOCK": {
       // Find the currently focused block
       const focusedBlockIndex = state.findIndex((block) => block.isFocused);
-
+      const focusedBlock = newList[focusedBlockIndex]
       // If there is no focused block it means we have an empty page
       if (focusedBlockIndex !== -1) {
         // Deactivate the currently focused block
         newList.splice(focusedBlockIndex, 1, {
-          ...newList[focusedBlockIndex],
+          ...focusedBlock,
           isFocused: false,
         });
       }
@@ -97,6 +97,11 @@ export default (state, action) => {
         ...newList[action.index],
         isFocused: true,
       });
+      return newList;
+    }
+    case "DELETE_BLOCK": {
+      deleteNode(newList[action.index]);
+      newList.splice(action.index, 1);
       return newList;
     }
     case "SET_BLOCK_PARENT": {
@@ -143,11 +148,6 @@ export default (state, action) => {
         depth: currentDepth - 1,
       });
 
-      return newList;
-    }
-    case "DELETE_BLOCK": {
-      deleteNode(newList[action.index]);
-      newList.splice(action.index, 1);
       return newList;
     }
     default: {

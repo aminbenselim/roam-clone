@@ -10,7 +10,7 @@ import {
   getNodesByValue,
 } from "./dgraph";
 import debounce from "lodash/debounce";
-import differnce from "lodash/difference";
+import difference from "lodash/difference";
 
 import { usePrevious } from "./utils/usePrevious";
 
@@ -42,8 +42,8 @@ export const Block = ({ block, setBlockValueInList, setBlockFocused }) => {
 
   React.useEffect(() => {
     if (prevRefs) {
-      const additions = differnce(Array.from(references), Array.from(prevRefs));
-      const deletions = differnce(Array.from(prevRefs), Array.from(references));
+      const additions = difference(Array.from(references), Array.from(prevRefs));
+      const deletions = difference(Array.from(prevRefs), Array.from(references));
 
       if (additions.length > 0) {
         setNodeReferences(block.nodeId, additions);

@@ -22,7 +22,7 @@ export const Page = ({ id, title, showRefs }) => {
   React.useEffect(() => {
     const fetchPageData = async () => {
       const childNodes = await getChildren(pageId);
-      const {title, decendentBlocks} = flattenChildren(childrenNodes);
+      const {title, decendentBlocks} = flattenChildren(childNodes);
       // Set title for the page
       setTitle(title);
       // If page has no decendent blocks
@@ -127,10 +127,11 @@ export const Page = ({ id, title, showRefs }) => {
             }
             // Delete key press
             if (code === KEY.DEL) {
-              // if there is only one block on the page
+              // Check if there is only one block on the page
               if (blocksCount === 1) {
                 return;
               }
+              // Check if the block is empty
               if (!focusedBlock.value) {
                 e.preventDefault();
                 // delete the focused block
