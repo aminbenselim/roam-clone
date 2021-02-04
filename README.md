@@ -12,6 +12,7 @@ a RoamResearch clone built with React and Dgraph with the following minimal set 
 
 ## Prerequisites
 Node (We recommend using v12.6.0 or higher)
+
 Docker
 
 ## Getting Started
