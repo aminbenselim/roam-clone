@@ -1,8 +1,8 @@
 import React from "react";
 import { MentionsInput, Mention } from "react-mentions";
 import { Link, useParams } from "react-router-dom";
-import DOMPurify from "dompurify";
-import marked from 'marked';
+// import DOMPurify from "dompurify";
+// import marked from 'marked';
 import {
   getNodesByTitle,
   setNodeReferences,
@@ -36,14 +36,26 @@ export const Block = ({ block, setBlockValueInList, setBlockFocused }) => {
 
   React.useEffect(() => {
     if (block.isFocused) {
-      inputRef && inputRef.current.focus();
+      if (inputRef) {
+        inputRef.current.focus();
+        inputRef.current.setSelectionRange(
+          inputRef.current.value.length,
+          inputRef.current.value.length
+        );
+      }
     }
   }, [inputRef, block.isFocused]);
 
   React.useEffect(() => {
     if (prevRefs) {
-      const additions = difference(Array.from(references), Array.from(prevRefs));
-      const deletions = difference(Array.from(prevRefs), Array.from(references));
+      const additions = difference(
+        Array.from(references),
+        Array.from(prevRefs)
+      );
+      const deletions = difference(
+        Array.from(prevRefs),
+        Array.from(references)
+      );
 
       if (additions.length > 0) {
         setNodeReferences(block.nodeId, additions);
@@ -111,7 +123,7 @@ export const Block = ({ block, setBlockValueInList, setBlockFocused }) => {
           </Link>
           <div
             dangerouslySetInnerHTML={{
-              __html: block.value ? DOMPurify.sanitize(marked(block.value)) : " ",
+              __html: block.value ? block.value : " ",
             }}
             onClick={setBlockFocused}
             style={{ width: "100%" }}

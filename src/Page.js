@@ -212,7 +212,7 @@ export const Page = ({ id, title, showRefs }) => {
           ))}
           {showRefs && (
             <div>
-              <h2 onClick={fetchReferences}>References</h2>
+              <h2 className="references-header" onClick={fetchReferences}>References</h2>
               <ul>
                 {Object.entries(referencedBy).map(([pageId, refs]) => (
                   <li key={pageId}>
